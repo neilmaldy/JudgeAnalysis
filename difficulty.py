@@ -125,76 +125,48 @@ for judge_type_id in scores:
             # pprint.pprint(judge_tally_data)
             pprint.pprint(judge_results)
 
-misses_station_entry_rows = {}
-breaks_station_entry_rows = {}
+station_entry_rows = {}
 for entry_number in scores['P']:
     print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['P'][entry_number], key=lambda x: x[1]):
         station_id = judge_id.split('-')[0]
-        if station_id not in misses_station_entry_rows:
-            misses_station_entry_rows[station_id] = {}
-            misses_station_entry_rows[station_id]['judge_ids'] = []
-            misses_station_entry_rows[station_id]['entries'] = {}
-        if judge_id not in misses_station_entry_rows[station_id]['judge_ids']:
-            misses_station_entry_rows[station_id]['judge_ids'].append(judge_id)
-        if entry_number not in misses_station_entry_rows[station_id]['entries']:
-            misses_station_entry_rows[station_id]['entries'][entry_number] = {}
-        misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
+        if station_id not in station_entry_rows:
+            station_entry_rows[station_id] = {}
+            station_entry_rows[station_id]['judge_ids'] = []
+            station_entry_rows[station_id]['entries'] = {}
+        if judge_id not in station_entry_rows[station_id]['judge_ids']:
+            station_entry_rows[station_id]['judge_ids'].append(judge_id)
+        if entry_number not in station_entry_rows[station_id]['entries']:
+            station_entry_rows[station_id]['entries'][entry_number] = {}
+        station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
 for entry_number in scores['T']:
     print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['T'][entry_number], key=lambda x: x[1]):
         station_id = judge_id.split('-')[0]
-        if station_id not in misses_station_entry_rows:
-            misses_station_entry_rows[station_id] = {}
-            misses_station_entry_rows[station_id]['judge_ids'] = []
-            misses_station_entry_rows[station_id]['entries'] = {}
-        if judge_id not in misses_station_entry_rows[station_id]['judge_ids']:
-            misses_station_entry_rows[station_id]['judge_ids'].append(judge_id)
-        if entry_number not in misses_station_entry_rows[station_id]['entries']:
-            misses_station_entry_rows[station_id]['entries'][entry_number] = {}
-        misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
-
-        if event_definition_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF']:
-            if station_id not in breaks_station_entry_rows:
-                breaks_station_entry_rows[station_id] = {}
-                breaks_station_entry_rows[station_id]['judge_ids'] = []
-                breaks_station_entry_rows[station_id]['entries'] = {}
-            if judge_id not in breaks_station_entry_rows[station_id]['judge_ids']:
-                breaks_station_entry_rows[station_id]['judge_ids'].append(judge_id)
-            if entry_number not in breaks_station_entry_rows[station_id]['entries']:
-                breaks_station_entry_rows[station_id]['entries'][entry_number] = {}
-            breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nb']
-
-for entry_number in scores['Dj']:
-    print(entry_number)
-    for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['Dj'][entry_number], key=lambda x: x[1]):
-        station_id = judge_id.split('-')[0]
-        if event_definition_abbr in ['DDSF', 'DDPF']:
-            if station_id not in breaks_station_entry_rows:
-                breaks_station_entry_rows[station_id] = {}
-                breaks_station_entry_rows[station_id]['judge_ids'] = []
-                breaks_station_entry_rows[station_id]['entries'] = {}
-            if judge_id not in breaks_station_entry_rows[station_id]['judge_ids']:
-                breaks_station_entry_rows[station_id]['judge_ids'].append(judge_id)
-            if entry_number not in breaks_station_entry_rows[station_id]['entries']:
-                breaks_station_entry_rows[station_id]['entries'][entry_number] = {}
-            breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_tally_data['break']
-
+        if station_id not in station_entry_rows:
+            station_entry_rows[station_id] = {}
+            station_entry_rows[station_id]['judge_ids'] = []
+            station_entry_rows[station_id]['entries'] = {}
+        if judge_id not in station_entry_rows[station_id]['judge_ids']:
+            station_entry_rows[station_id]['judge_ids'].append(judge_id)
+        if entry_number not in station_entry_rows[station_id]['entries']:
+            station_entry_rows[station_id]['entries'][entry_number] = {}
+        station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
 with open('output.csv', 'w') as f:
     print("Misses\n")
     print("Misses\n", file=f)
-    for station_id in misses_station_entry_rows:
+    for station_id in station_entry_rows:
         if station_id in station_id_to_session_name:
             print(station_id_to_session_name[station_id])
             print(station_id_to_session_name[station_id], file=f)
         else:
             print(station_id)
             print(station_id, file=f)
-        misses_station_entry_rows[station_id]['judge_ids'].sort()
+        station_entry_rows[station_id]['judge_ids'].sort()
         row = 'Entry Number'
-        for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
+        for judge_id in station_entry_rows[station_id]['judge_ids']:
             if False and judge_id in judge_id_to_name:
                 row += ',' + judge_id_to_name[judge_id]
             else:
@@ -203,44 +175,11 @@ with open('output.csv', 'w') as f:
         print(row)
         print(row, file=f)
 
-        for entry_number in misses_station_entry_rows[station_id]['entries']:
+        for entry_number in station_entry_rows[station_id]['entries']:
             row = entry_number
-            for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
-                if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
-                else:
-                    row += ','
-            print(row)
-            print(row, file=f)
-        else:
-            print()
-            print('', file=f)
-
-    print("Breaks\n")
-    print("Breaks\n", file=f)
-    for station_id in breaks_station_entry_rows:
-        if station_id in station_id_to_session_name:
-            print(station_id_to_session_name[station_id])
-            print(station_id_to_session_name[station_id], file=f)
-        else:
-            print(station_id)
-            print(station_id, file=f)
-        breaks_station_entry_rows[station_id]['judge_ids'].sort()
-        row = 'Entry Number'
-        for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
-            if False and judge_id in judge_id_to_name:
-                row += ',' + judge_id_to_name[judge_id]
-            else:
-                row += ',' + judge_id
-        # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
-        print(row)
-        print(row, file=f)
-
-        for entry_number in breaks_station_entry_rows[station_id]['entries']:
-            row = entry_number
-            for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
-                if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+            for judge_id in station_entry_rows[station_id]['judge_ids']:
+                if judge_id in station_entry_rows[station_id]['entries'][entry_number]:
+                    row += ',' + str(station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
                     row += ','
             print(row)
