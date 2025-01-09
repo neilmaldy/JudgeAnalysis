@@ -134,11 +134,17 @@ for entry_number in scores['P']:
         if station_id not in misses_station_entry_rows:
             misses_station_entry_rows[station_id] = {}
             misses_station_entry_rows[station_id]['judge_ids'] = []
+            misses_station_entry_rows[station_id]['judge_types'] = {}
             misses_station_entry_rows[station_id]['entries'] = {}
+            misses_station_entry_rows[station_id]['entry_types'] = {}
         if judge_id not in misses_station_entry_rows[station_id]['judge_ids']:
             misses_station_entry_rows[station_id]['judge_ids'].append(judge_id)
+        if judge_id not in misses_station_entry_rows[station_id]['judge_types']:
+            misses_station_entry_rows[station_id]['judge_types'][judge_id] = 'P'
         if entry_number not in misses_station_entry_rows[station_id]['entries']:
             misses_station_entry_rows[station_id]['entries'][entry_number] = {}
+        if entry_number not in misses_station_entry_rows[station_id]['entry_types']:
+            misses_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
         misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
 for entry_number in scores['T']:
@@ -148,22 +154,34 @@ for entry_number in scores['T']:
         if station_id not in misses_station_entry_rows:
             misses_station_entry_rows[station_id] = {}
             misses_station_entry_rows[station_id]['judge_ids'] = []
+            misses_station_entry_rows[station_id]['judge_types'] = {}
             misses_station_entry_rows[station_id]['entries'] = {}
+            misses_station_entry_rows[station_id]['entry_types'] = {}
         if judge_id not in misses_station_entry_rows[station_id]['judge_ids']:
             misses_station_entry_rows[station_id]['judge_ids'].append(judge_id)
+        if judge_id not in misses_station_entry_rows[station_id]['judge_types']:
+            misses_station_entry_rows[station_id]['judge_types'][judge_id] = 'T'
         if entry_number not in misses_station_entry_rows[station_id]['entries']:
             misses_station_entry_rows[station_id]['entries'][entry_number] = {}
+        if entry_number not in misses_station_entry_rows[station_id]['entry_types']:
+            misses_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
         misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
         if event_definition_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF']:
             if station_id not in breaks_station_entry_rows:
                 breaks_station_entry_rows[station_id] = {}
                 breaks_station_entry_rows[station_id]['judge_ids'] = []
+                breaks_station_entry_rows[station_id]['judge_types'] = {}
                 breaks_station_entry_rows[station_id]['entries'] = {}
+                breaks_station_entry_rows[station_id]['entry_types'] = {}
             if judge_id not in breaks_station_entry_rows[station_id]['judge_ids']:
                 breaks_station_entry_rows[station_id]['judge_ids'].append(judge_id)
+            if judge_id not in breaks_station_entry_rows[station_id]['judge_types']:
+                breaks_station_entry_rows[station_id]['judge_types'][judge_id] = 'T'
             if entry_number not in breaks_station_entry_rows[station_id]['entries']:
                 breaks_station_entry_rows[station_id]['entries'][entry_number] = {}
+            if entry_number not in breaks_station_entry_rows[station_id]['entry_types']:
+                breaks_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
             breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nb']
 
 for entry_number in scores['Dj']:
@@ -174,11 +192,17 @@ for entry_number in scores['Dj']:
             if station_id not in breaks_station_entry_rows:
                 breaks_station_entry_rows[station_id] = {}
                 breaks_station_entry_rows[station_id]['judge_ids'] = []
+                breaks_station_entry_rows[station_id]['judge_types'] = {}
                 breaks_station_entry_rows[station_id]['entries'] = {}
+                breaks_station_entry_rows[station_id]['entry_types'] = {}
             if judge_id not in breaks_station_entry_rows[station_id]['judge_ids']:
                 breaks_station_entry_rows[station_id]['judge_ids'].append(judge_id)
+            if judge_id not in breaks_station_entry_rows[station_id]['judge_types']:
+                breaks_station_entry_rows[station_id]['judge_types'][judge_id] = 'Dj'
             if entry_number not in breaks_station_entry_rows[station_id]['entries']:
                 breaks_station_entry_rows[station_id]['entries'][entry_number] = {}
+            if entry_number not in breaks_station_entry_rows[station_id]['entry_types']:
+                breaks_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
             breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_tally_data['break']
 
 
@@ -198,13 +222,13 @@ with open('output.csv', 'w') as f:
             if False and judge_id in judge_id_to_name:
                 row += ',' + judge_id_to_name[judge_id]
             else:
-                row += ',' + judge_id
+                row += ',' + judge_id + ' ' + misses_station_entry_rows[station_id]['judge_types'][judge_id]
         # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
         print(row)
         print(row, file=f)
 
         for entry_number in misses_station_entry_rows[station_id]['entries']:
-            row = entry_number
+            row = entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number]
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
                     row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -231,13 +255,13 @@ with open('output.csv', 'w') as f:
             if False and judge_id in judge_id_to_name:
                 row += ',' + judge_id_to_name[judge_id]
             else:
-                row += ',' + judge_id
+                row += ',' + judge_id + ' ' + breaks_station_entry_rows[station_id]['judge_types'][judge_id]
         # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
         print(row)
         print(row, file=f)
 
         for entry_number in breaks_station_entry_rows[station_id]['entries']:
-            row = entry_number
+            row = entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number]
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
                     row += ',' + str(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
