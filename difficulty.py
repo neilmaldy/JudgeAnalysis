@@ -139,6 +139,7 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                     sr_scores_station_entry_rows[station_id]['judge_types'] = {}
                     sr_scores_station_entry_rows[station_id]['entries'] = {}
                     sr_scores_station_entry_rows[station_id]['entry_types'] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_stats'] = {}
                 if judge_id not in sr_scores_station_entry_rows[station_id]['judge_ids']:
                     sr_scores_station_entry_rows[station_id]['judge_ids'].append(judge_id)
                 if judge_type_id not in sr_scores_station_entry_rows[station_id]['judge_types']:
@@ -159,8 +160,21 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                     temp_list.append(str(temp_dict[key]))
                     if 'diff' in key:
                         total_score += temp_dict[key]
+                temp_dict['Total'] = total_score
                 temp_list.append(str(total_score))
                 sr_scores_station_entry_rows[station_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                if judge_id not in sr_scores_station_entry_rows[station_id]['judge_stats']:
+                    sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id] = {}
+                    for key in sr_scores_station_entry_rows[station_id]['columns'].split(','):
+                        sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] = 0
+                    sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'] = 0  
+                if total_score > 0:
+                    for key in sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id]:
+                        if key == 'heat_count':
+                            sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] += 1
+                        else:
+                            sr_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] += temp_dict[key]
+
             if event_definition_abbr in ['DDSF', 'DDPF'] and judge_type_id in ['Dj', 'Dt']:
                 if station_id not in dd_scores_station_entry_rows:
                     dd_scores_station_entry_rows[station_id] = {}
@@ -168,6 +182,7 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                     dd_scores_station_entry_rows[station_id]['judge_types'] = {}
                     dd_scores_station_entry_rows[station_id]['entries'] = {}
                     dd_scores_station_entry_rows[station_id]['entry_types'] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_stats'] = {}
                 if judge_id not in dd_scores_station_entry_rows[station_id]['judge_ids']:
                     dd_scores_station_entry_rows[station_id]['judge_ids'].append(judge_id)
                 if judge_type_id not in dd_scores_station_entry_rows[station_id]['judge_types']:
@@ -189,8 +204,20 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                     temp_list.append(str(temp_dict[key]))
                     if 'diff' in key:
                         total_score += temp_dict[key]
+                temp_dict['Total'] = total_score
                 temp_list.append(str(total_score))
                 dd_scores_station_entry_rows[station_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                if judge_id not in dd_scores_station_entry_rows[station_id]['judge_stats']:
+                    dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id] = {}
+                    for key in dd_scores_station_entry_rows[station_id]['columns'].split(','):
+                        dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] = 0
+                    dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'] = 0  
+                if total_score > 0:
+                    for key in dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id]:
+                        if key == 'heat_count':
+                            dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] += 1
+                        else:
+                            dd_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key] += temp_dict[key]
 
 print()
 
@@ -205,7 +232,25 @@ with open('output.csv', 'w') as f:
         else:
             print(station_id)
             print(station_id, file=f)
+
+        row = 'Judge Info,' + all_scores_station_entry_rows[station_id]['columns'] + ',Heat Count'
+        print(row)
+        print(row, file=f)
+        all_scores_station_entry_rows[station_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_stats'].items()))
+        for judge_id in all_scores_station_entry_rows[station_id]['judge_stats']:
+            row = judge_id + ' ' + all_scores_station_entry_rows[station_id]['judge_types'][judge_id]
+            if all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'] > 0:
+                all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'],2)
+                all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['Total'] = round(all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['Total']/all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'],2)
+            row += ',' + ','.join([str(all_scores_station_entry_rows[station_id]['judge_stats'][judge_id][key]) for key in all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]])
+            print(row)
+            print(row, file=f)
+        else:
+            print()
+            print('', file=f)
+
         all_scores_station_entry_rows[station_id]['judge_ids'].sort()
+
         row = 'Entry Number,Judge Info,' + all_scores_station_entry_rows[station_id]['columns']
         print(row)
         print(row, file=f)

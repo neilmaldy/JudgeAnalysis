@@ -227,18 +227,38 @@ with open('output.csv', 'w') as f:
         print(row)
         print(row, file=f)
 
+        running_totals = {}
+
         for entry_number in misses_station_entry_rows[station_id]['entries']:
             row = entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number]
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
                     row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                    if judge_id not in running_totals:
+                        running_totals[judge_id] = []
+                    running_totals[judge_id].append(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
                     row += ','
             print(row)
             print(row, file=f)
-        else:
-            print()
-            print('', file=f)
+        row = 'Totals'
+        for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
+            if judge_id in running_totals:
+                row += ',' + str(sum(running_totals[judge_id]))
+            else:
+                row += ','
+        print(row)
+        print(row, file=f)
+        row = 'Averages'
+        for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
+            if judge_id in running_totals:
+                row += ',' + str(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
+            else:
+                row += ','
+        print(row)
+        print(row, file=f)
+        print()
+        print('', file=f)
 
     print("Breaks\n")
     print("Breaks\n", file=f)
@@ -265,10 +285,29 @@ with open('output.csv', 'w') as f:
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
                     row += ',' + str(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                    if judge_id not in running_totals:
+                        running_totals[judge_id] = []
+                    running_totals[judge_id].append(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
                     row += ','
             print(row)
             print(row, file=f)
-        else:
-            print()
-            print('', file=f)
+        row = 'Totals'
+        for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
+            if judge_id in running_totals:
+                row += ',' + str(sum(running_totals[judge_id]))
+            else:
+                row += ','
+        print(row)
+        print(row, file=f)
+        row = 'Averages'
+        for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
+            if judge_id in running_totals:
+                row += ',' + str(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
+            else:
+                row += ','
+        print(row)
+        print(row, file=f)
+
+        print()
+        print('', file=f)
