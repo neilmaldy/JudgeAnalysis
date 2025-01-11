@@ -126,7 +126,9 @@ for judge_type_id in scores:
             pprint.pprint(judge_results)
 
 misses_station_entry_rows = {}
+presentation_station_entry_rows = {}
 breaks_station_entry_rows = {}
+
 for entry_number in scores['P']:
     print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['P'][entry_number], key=lambda x: x[1]):
@@ -147,6 +149,25 @@ for entry_number in scores['P']:
             misses_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
         misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
+        if station_id not in presentation_station_entry_rows:
+            presentation_station_entry_rows[station_id] = {}
+            presentation_station_entry_rows[station_id]['judge_ids'] = []
+            presentation_station_entry_rows[station_id]['judge_types'] = {}
+            presentation_station_entry_rows[station_id]['entries'] = {}
+            presentation_station_entry_rows[station_id]['entry_types'] = {}
+            presentation_station_entry_rows[station_id]['judge_stats'] = {}
+        if judge_id not in presentation_station_entry_rows[station_id]['judge_ids']:
+            presentation_station_entry_rows[station_id]['judge_ids'].append(judge_id)
+        if judge_id not in presentation_station_entry_rows[station_id]['judge_types']:
+            presentation_station_entry_rows[station_id]['judge_types'][judge_id] = 'P'
+        if entry_number not in presentation_station_entry_rows[station_id]['entries']:
+            presentation_station_entry_rows[station_id]['entries'][entry_number] = {}
+        if entry_number not in presentation_station_entry_rows[station_id]['entry_types']:
+            presentation_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
+        presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id] = (round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari'])
+        if judge_id not in presentation_station_entry_rows[station_id]['judge_stats']:
+            presentation_station_entry_rows[station_id]['judge_stats'][judge_id] = []
+        presentation_station_entry_rows[station_id]['judge_stats'][judge_id].append((round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari']))
 for entry_number in scores['T']:
     print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['T'][entry_number], key=lambda x: x[1]):
@@ -311,3 +332,53 @@ with open('output.csv', 'w') as f:
 
         print()
         print('', file=f)
+
+    print("Presentation\n")
+    print("Presentation\n", file=f)
+    running_totals = {}
+    for station_id in misses_station_entry_rows:
+        if station_id in station_id_to_session_name:
+            print(station_id_to_session_name[station_id])
+            print(station_id_to_session_name[station_id], file=f)
+        else:
+            print(station_id)
+            print(station_id, file=f)
+        presentation_station_entry_rows[station_id]['judge_ids'].sort()
+
+        row = 'Judge, P avg, E avg, F avg, M avg, C avg, V avg'
+        print(row)
+        print(row, file=f)
+        for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+            p_list = [x[0] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            e_list = [x[1] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            f_list = [x[2] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            m_list = [x[3] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            c_list = [x[4] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            v_list = [x[5] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+            row = judge_id
+            row += ',' + str(round(sum(p_list)/len(p_list), 2)) + ',' + str(round(sum(e_list)/len(e_list), 2)) + ',' + str(round(sum(f_list)/len(f_list), 2)) + ',' + str(round(sum(m_list)/len(m_list), 2)) + ',' + str(round(sum(c_list)/len(c_list), 2)) + ',' + str(round(sum(v_list)/len(v_list), 2))
+            print(row)
+            print(row, file=f)
+
+        print()
+        print('', file=f)
+
+        row = 'Entry Number, Judge, P, E, F, M, C, V'
+        print(row)
+        print(row, file=f)
+        for entry_number in presentation_station_entry_rows[station_id]['entries']:
+            for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                row = entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ',' + judge_id
+                if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
+                    row += ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5])
+                    if judge_id not in running_totals:
+                        running_totals[judge_id] = []
+                    running_totals[judge_id].append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                else:
+                    row += ',,,,,,'
+                print(row)
+                print(row, file=f)
+        
+        print()
+        print('', file=f)
+
