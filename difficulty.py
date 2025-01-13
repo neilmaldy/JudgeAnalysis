@@ -233,10 +233,29 @@ with open('output.csv', 'w') as f:
             print(station_id)
             print(station_id, file=f)
 
+        all_scores_station_entry_rows[station_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_stats'].items()))
+        all_scores_station_entry_rows[station_id]['judge_ids'].sort()
+        row = 'Entry Number'
+        for judge_id in all_scores_station_entry_rows[station_id]['judge_ids']:
+            row += ',' + judge_id + ' ' + all_scores_station_entry_rows[station_id]['judge_types'][judge_id]
+        print(row)
+        print(row, file=f)
+        for entry_number in all_scores_station_entry_rows[station_id]['entries']:
+            row = entry_number
+            for judge_id in all_scores_station_entry_rows[station_id]['judge_ids']:
+                if judge_id in all_scores_station_entry_rows[station_id]['entries'][entry_number]:
+                    row += ',' + all_scores_station_entry_rows[station_id]['entries'][entry_number][judge_id].split(',')[0]
+                else:
+                    row += ','
+            print(row)
+            print(row, file=f)
+
+        print()
+        print('', file=f)
+
         row = 'Judge Info,' + all_scores_station_entry_rows[station_id]['columns'] + ',Heat Count'
         print(row)
         print(row, file=f)
-        all_scores_station_entry_rows[station_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_stats'].items()))
         for judge_id in all_scores_station_entry_rows[station_id]['judge_stats']:
             row = judge_id + ' ' + all_scores_station_entry_rows[station_id]['judge_types'][judge_id]
             if all_scores_station_entry_rows[station_id]['judge_stats'][judge_id]['heat_count'] > 0:

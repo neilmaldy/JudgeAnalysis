@@ -162,9 +162,11 @@ for entry_number in scores['P']:
             presentation_station_entry_rows[station_id]['judge_types'][judge_id] = 'P'
         if entry_number not in presentation_station_entry_rows[station_id]['entries']:
             presentation_station_entry_rows[station_id]['entries'][entry_number] = {}
+            presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list'] = []
         if entry_number not in presentation_station_entry_rows[station_id]['entry_types']:
             presentation_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
         presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id] = (round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari'])
+        presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list'].append(round(judge_results['p'], 2))
         if judge_id not in presentation_station_entry_rows[station_id]['judge_stats']:
             presentation_station_entry_rows[station_id]['judge_stats'][judge_id] = []
         presentation_station_entry_rows[station_id]['judge_stats'][judge_id].append((round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari']))
@@ -335,6 +337,7 @@ with open('output.csv', 'w') as f:
 
     print("Presentation\n")
     print("Presentation\n", file=f)
+
     running_totals = {}
     for station_id in misses_station_entry_rows:
         if station_id in station_id_to_session_name:
@@ -344,6 +347,28 @@ with open('output.csv', 'w') as f:
             print(station_id)
             print(station_id, file=f)
         presentation_station_entry_rows[station_id]['judge_ids'].sort()
+
+        p_avg = {}
+        for entry_number in presentation_station_entry_rows[station_id]['entries']:
+            if len(presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list']) > 0:
+                p_avg[entry_number] = round(sum(presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list'])/len(presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list']), 2)
+            else:
+                p_avg[entry_number] = 0
+        sorted_p_avg = sorted(p_avg.items(), key=lambda x: x[1], reverse=True)
+        row = 'Entry,P avg,' + ','.join(presentation_station_entry_rows[station_id]['judge_ids'])
+        print(row)
+        print(row, file=f)
+        for entry_number, p_value in sorted_p_avg:
+            row = entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ',' + str(p_avg[entry_number])
+            for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
+                    row += ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0])
+                else:
+                    row += ','
+            print(row)
+            print(row, file=f)
+        print()
+        print('', file=f)
 
         row = 'Judge, P avg, E avg, F avg, M avg, C avg, V avg'
         print(row)
