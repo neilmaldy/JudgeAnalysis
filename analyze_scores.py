@@ -38,6 +38,7 @@ wb = xlsxwriter.Workbook()
 miss_sheet = wb.add_worksheet('Misses')
 break_sheet = wb.add_worksheet('Breaks')
 presentation_sheet = wb.add_worksheet('Presentation')
+difficulty_sheet = wb.add_worksheet('Difficulty')
 
 data_cell_format = wb.add_format({'border': 1})
 
@@ -232,12 +233,12 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 temp_list = []
                 total_score = 0
                 for key in sorted(temp_dict.keys()):
-                    temp_list.append(str(temp_dict[key]))
+                    temp_list.append(temp_dict[key])
                     if 'diff' in key:
                         total_score += temp_dict[key]
                 temp_dict['Total'] = total_score
-                temp_list.append(str(total_score))
-                sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                temp_list.append(total_score)
+                sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = tuple(temp_list)
                 if judge_id not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
                     sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
                     for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
@@ -280,12 +281,12 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 temp_list = []
                 total_score = 0
                 for key in sorted(temp_dict.keys()):
-                    temp_list.append(str(temp_dict[key]))
+                    temp_list.append(temp_dict[key])
                     if 'diff' in key:
                         total_score += temp_dict[key]
                 temp_dict['Total'] = total_score
-                temp_list.append(str(total_score))
-                dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                temp_list.append(total_score)
+                dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = tuple(temp_list)
                 if judge_id not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
                     dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
                     for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
@@ -520,6 +521,7 @@ with open('output.csv', 'w') as f:
         for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
             print(station_id+ ' ' + judge_type_id)
             print(station_id+ ' ' + judge_type_id, file=f)
+            append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id], data_cell_format)
 
             all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'].items()))
             all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
@@ -531,39 +533,45 @@ with open('output.csv', 'w') as f:
                     d_avg[entry_number] = 0
             sorted_d_avg = sorted(d_avg.items(), key=lambda x: x[1], reverse=True)
 
-            row = 'Entry Number, Davg'
+            row = ['Entry Number', 'Davg']
             for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
-                row += ',' + judge_id + ' ' + judge_type_id
-            print(row)
-            print(row, file=f)
+                row.append(judge_id + ' ' + judge_type_id)
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(difficulty_sheet, row, data_cell_format)
 
             for entry_number, d in sorted_d_avg:
-                row = entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ',' + str(d)
+                row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number], d]
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                     if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
-                        row += ',' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id].split(',')[0]
+                        row.append(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0])
                     else:
-                        row += ','
-                print(row)
-                print(row, file=f)
-
+                        row.append('')
+                print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                last_row = append_row_2(difficulty_sheet, row, data_cell_format)
             print()
             print('', file=f)
+            append_row_2(difficulty_sheet, [], data_cell_format)
 
             row = 'Judge Info,' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] + ',Heat Count'
             print(row)
             print(row, file=f)
+            header_row = append_row_2(difficulty_sheet, row.split(','), data_cell_format)
+
             for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
-                row = judge_id + ' ' + judge_type_id
+                row = [judge_id + ' ' + judge_type_id]
                 if all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] > 0:
                     all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
                     all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
-                row += ',' + ','.join([str(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key]) for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
-                print(row)
-                print(row, file=f)
+                row.extend([all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
+                print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                last_row = append_row_2(difficulty_sheet, row, data_cell_format)
             else:
                 print()
                 print('', file=f)
+                append_row_2(difficulty_sheet, [], data_cell_format)
 
             all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
 
