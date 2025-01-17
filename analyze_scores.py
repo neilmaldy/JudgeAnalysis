@@ -7,18 +7,6 @@ def max_column_width(x, y):
     return max(x, len(str(y)))
 
 
-def append_row(worksheet, list_to_append):
-    try:
-        worksheet.write_row(worksheet.row_counter, 0, list_to_append)
-        worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
-    except AttributeError:
-        worksheet.row_counter = 0
-        worksheet.column_widths = [len(x) for x in list_to_append]
-        worksheet.write_row(worksheet.row_counter, 0, list_to_append)
-    worksheet.row_counter += 1
-    return
-
-
 def append_row_2(worksheet, list_to_append, cell_format=None):
 
     if not cell_format:
@@ -45,6 +33,7 @@ def set_column_widths(worksheet):
         worksheet.set_column(last_column_id, last_column_id, last_column_width + 5.0)
     return
 
+debugit = False
 wb = xlsxwriter.Workbook()
 miss_sheet = wb.add_worksheet('Misses')
 break_sheet = wb.add_worksheet('Breaks')
@@ -56,75 +45,6 @@ file = open('CompetitionScores_YMCA Super Skipper Judge Training_2025-01-06_16-5
 dict_reader = csv.DictReader(file, delimiter='\t')
 data = [row for row in dict_reader]
 file.close()
-session_name_to_station_id = {}
-session_name_to_station_id['Single Rope-1'] = '3867'
-session_name_to_station_id['Single Rope-2'] = '3868'
-session_name_to_station_id['Wheel-1'] = '3869'
-session_name_to_station_id['Wheel-2'] = '3870'
-session_name_to_station_id['Double Dutch-1'] = '3871'
-session_name_to_station_id['Double Dutch-2'] = '3872'
-judge_id_to_name = {}
-judge_id_to_name['3867-1'] = 'Darcy S'
-judge_id_to_name['3867-2'] = 'Stephanie E'
-judge_id_to_name['3867-3'] = 'Fiona W'
-judge_id_to_name['3867-4'] = 'Kristen M'
-judge_id_to_name['3867-5'] = 'JD D'
-judge_id_to_name['3869-1'] = 'Darcy S'
-judge_id_to_name['3869-2'] = 'Stephanie E'
-judge_id_to_name['3869-3'] = 'Fiona W'
-judge_id_to_name['3869-4'] = 'Kristen M'
-judge_id_to_name['3869-5'] = 'JD D'
-judge_id_to_name['3871-1'] = 'Darcy S'
-judge_id_to_name['3871-2'] = 'Stephanie E'
-judge_id_to_name['3871-3'] = 'Fiona W'
-judge_id_to_name['3871-4'] = 'Kristen M'
-judge_id_to_name['3871-5'] = 'JD D'
-
-judge_id_to_name['3868-1'] = 'Jennifer H'
-judge_id_to_name['3868-2'] = 'Cheryl C'
-judge_id_to_name['3868-3'] = 'Neha P'
-judge_id_to_name['3868-4'] = 'Megan D'
-judge_id_to_name['3868-5'] = 'Lainie C'
-judge_id_to_name['3870-1'] = 'Jennifer H'
-judge_id_to_name['3870-2'] = 'Cheryl C'
-judge_id_to_name['3870-3'] = 'Neha P'
-judge_id_to_name['3870-4'] = 'Megan D'
-judge_id_to_name['3870-5'] = 'Lainie C'
-judge_id_to_name['3872-1'] = 'Jennifer H'
-judge_id_to_name['3872-2'] = 'Cheryl C'
-judge_id_to_name['3872-3'] = 'Neha P'
-judge_id_to_name['3872-4'] = 'Megan D'
-judge_id_to_name['3872-5'] = 'Lainie C'
-
-judge_id_to_name['3867-11'] = 'Will A'
-judge_id_to_name['3867-12'] = 'Cynthia M'
-judge_id_to_name['3867-13'] = 'Matt A'
-judge_id_to_name['3867-14'] = 'Teresa A'
-judge_id_to_name['3869-11'] = 'Will A'
-judge_id_to_name['3869-12'] = 'Cynthia M'
-judge_id_to_name['3869-13'] = 'Matt A'
-judge_id_to_name['3869-14'] = 'Teresa A'
-judge_id_to_name['3871-11'] = 'Will A'
-judge_id_to_name['3871-12'] = 'Cynthia M'
-judge_id_to_name['3871-13'] = 'Matt A'
-judge_id_to_name['3871-14'] = 'Teresa A'
-
-judge_id_to_name['3868-11'] = 'Heidi B'
-judge_id_to_name['3868-12'] = 'Mencken D'
-judge_id_to_name['3868-13'] = 'Justin K'
-judge_id_to_name['3868-14'] = 'Kenji N'
-judge_id_to_name['3870-11'] = 'Heidi B'
-judge_id_to_name['3870-12'] = 'Mencken D'
-judge_id_to_name['3870-13'] = 'Justin K'
-judge_id_to_name['3870-14'] = 'Kenji N'
-judge_id_to_name['3872-11'] = 'Heidi B'
-judge_id_to_name['3872-12'] = 'Mencken D'
-judge_id_to_name['3872-13'] = 'Justin K'
-judge_id_to_name['3872-14'] = 'Kenji N'
-
-station_id_to_session_name = {}
-for session_name in session_name_to_station_id:
-    station_id_to_session_name[session_name_to_station_id[session_name]] = session_name
 
 scores = {}
 for row in data:
@@ -139,10 +59,7 @@ for row in data:
         station_sequence = str(row['StationSequence'])
         score_sequence = str(row['ScoreSequence'])
         if not station_id:
-            if session_name + '-' + station_sequence in session_name_to_station_id:
-                station_id = session_name_to_station_id[ + '-' + station_sequence]
-            else:
-                station_id = '0000'
+            station_id = '0000'
         judge_id = station_id + '-' + score_sequence
         is_scored = row['IsScored']
         total_score = row['TotalScore']
@@ -167,20 +84,21 @@ for row in data:
 
 print("Scores parsed")
 
-for judge_type_id in scores:
-    for entry_number in scores[judge_type_id]:
-        print(judge_type_id, entry_number)
-        for event_definition_abbr, judge_id, judge_tally_data, judge_results in scores[judge_type_id][entry_number]:
-            print(event_definition_abbr, judge_id, judge_tally_data)
-            # pprint.pprint(judge_tally_data)
-            pprint.pprint(judge_results)
+if debugit:
+    for judge_type_id in scores:
+        for entry_number in scores[judge_type_id]:
+            print(judge_type_id, entry_number)
+            for event_definition_abbr, judge_id, judge_tally_data, judge_results in scores[judge_type_id][entry_number]:
+                print(event_definition_abbr, judge_id, judge_tally_data)
+                # pprint.pprint(judge_tally_data)
+                pprint.pprint(judge_results)
 
 misses_station_entry_rows = {}
 presentation_station_entry_rows = {}
 breaks_station_entry_rows = {}
 
 for entry_number in scores['P']:
-    print(entry_number)
+    if debugit: print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['P'][entry_number], key=lambda x: x[1]):
         station_id = judge_id.split('-')[0]
         if station_id not in misses_station_entry_rows:
@@ -221,7 +139,7 @@ for entry_number in scores['P']:
             presentation_station_entry_rows[station_id]['judge_stats'][judge_id] = []
         presentation_station_entry_rows[station_id]['judge_stats'][judge_id].append((round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari']))
 for entry_number in scores['T']:
-    print(entry_number)
+    if debugit: print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['T'][entry_number], key=lambda x: x[1]):
         station_id = judge_id.split('-')[0]
         if station_id not in misses_station_entry_rows:
@@ -258,7 +176,7 @@ for entry_number in scores['T']:
             breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nb']
 
 for entry_number in scores['Dj']:
-    print(entry_number)
+    if debugit: print(entry_number)
     for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['Dj'][entry_number], key=lambda x: x[1]):
         station_id = judge_id.split('-')[0]
         if event_definition_abbr in ['DDSF', 'DDPF']:
@@ -278,6 +196,108 @@ for entry_number in scores['Dj']:
                 breaks_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
             breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_tally_data['break']
 
+sr_scores_station_entry_rows = {}
+dd_scores_station_entry_rows = {}
+for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
+    for entry_number in scores[judge_type_id]: # Dr Dm Dp Db Da Dj Dt
+        print(entry_number)
+        for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores[judge_type_id][entry_number], key=lambda x: x[1]):
+            station_id = judge_id.split('-')[0]
+            if event_definition_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF'] and judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da']:
+                if station_id not in sr_scores_station_entry_rows:
+                    sr_scores_station_entry_rows[station_id] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_type'] = {}
+                if judge_type_id not in sr_scores_station_entry_rows[station_id]['judge_type']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'] = []
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'] = {}
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'] = {}
+                if judge_id not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].append(judge_id)
+                if entry_number not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number] = []
+                sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number].append(round(judge_results['d'],2))
+                if entry_number not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number] = {}
+                if entry_number not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] = event_definition_abbr
+                temp_dict = judge_tally_data
+                temp_dict.pop('rep', None)
+                temp_dict.pop('break', None)
+                temp_dict['d'] = round(judge_results['d'],2)
+                if 'columns' not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = ','.join(sorted(temp_dict.keys())) + ',Total'
+                temp_list = []
+                total_score = 0
+                for key in sorted(temp_dict.keys()):
+                    temp_list.append(str(temp_dict[key]))
+                    if 'diff' in key:
+                        total_score += temp_dict[key]
+                temp_dict['Total'] = total_score
+                temp_list.append(str(total_score))
+                sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                if judge_id not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
+                    for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
+                        sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] = 0
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] = 0  
+                if total_score > 0:
+                    for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]:
+                        if key == 'heat_count':
+                            sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += 1
+                        else:
+                            sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict[key]
+
+            if event_definition_abbr in ['DDSF', 'DDPF'] and judge_type_id in ['Dj', 'Dt']:
+                if station_id not in dd_scores_station_entry_rows:
+                    dd_scores_station_entry_rows[station_id] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_type'] = {}
+                if judge_type_id not in dd_scores_station_entry_rows[station_id]['judge_type']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'] = []
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'] = {}
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'] = {}
+                if judge_id not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].append(judge_id)
+                if entry_number not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number] = []
+                dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number].append(round(judge_results['d'],2))
+                if entry_number not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number] = {}
+                if entry_number not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] = event_definition_abbr
+                temp_dict = {'d': round(judge_results['d'],2)}
+                temp_dict.update(judge_tally_data)
+                temp_dict.pop('rep', None)
+                temp_dict.pop('break', None)
+                temp_dict['d'] = round(judge_results['d'],2)
+                if 'columns' not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = ','.join(temp_dict.keys()) + ',Total'
+                temp_list = []
+                total_score = 0
+                for key in sorted(temp_dict.keys()):
+                    temp_list.append(str(temp_dict[key]))
+                    if 'diff' in key:
+                        total_score += temp_dict[key]
+                temp_dict['Total'] = total_score
+                temp_list.append(str(total_score))
+                dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = ','.join(temp_list)
+                if judge_id not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
+                    for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
+                        dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] = 0
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] = 0  
+                if total_score > 0:
+                    for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]:
+                        if key == 'heat_count':
+                            dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += 1
+                        else:
+                            dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict[key]
+
 
 with open('output.csv', 'w') as f:
     print("Misses\n")
@@ -285,7 +305,7 @@ with open('output.csv', 'w') as f:
     for station_id in misses_station_entry_rows:
         print(station_id)
         print(station_id, file=f)
-        current_row = append_row_2(miss_sheet, [station_id], data_cell_format)
+        current_row = append_row_2(miss_sheet, [station_id + ' Misses'], data_cell_format)
         misses_station_entry_rows[station_id]['judge_ids'].sort()
         row = ['Entry Number']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
@@ -323,7 +343,8 @@ with open('output.csv', 'w') as f:
                 row.append('')
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
-        append_row_2(miss_sheet, row, data_cell_format)
+        last_row = append_row_2(miss_sheet, row, data_cell_format)
+        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
         row = ['Averages']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
@@ -333,7 +354,9 @@ with open('output.csv', 'w') as f:
                 row.append('')
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
-        append_row_2(miss_sheet, row, data_cell_format)
+        last_row = append_row_2(miss_sheet, row, data_cell_format)
+        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+
         print()
         print('', file=f)
         append_row_2(miss_sheet, [], data_cell_format)
@@ -343,7 +366,7 @@ with open('output.csv', 'w') as f:
     for station_id in breaks_station_entry_rows:
         print(station_id)
         print(station_id, file=f)
-        append_row_2(break_sheet, [station_id], data_cell_format)
+        append_row_2(break_sheet, [station_id + ' Breaks'], data_cell_format)
 
         breaks_station_entry_rows[station_id]['judge_ids'].sort()
         row = ['Entry Number']
@@ -376,7 +399,8 @@ with open('output.csv', 'w') as f:
                 row.append('')
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
-        append_row_2(break_sheet, row, data_cell_format)
+        last_row = append_row_2(break_sheet, row, data_cell_format)
+        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
         row = ['Averages']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
@@ -386,7 +410,8 @@ with open('output.csv', 'w') as f:
                 row.append('')
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
-        append_row_2(break_sheet, row, data_cell_format)
+        last_row = append_row_2(break_sheet, row, data_cell_format)
+        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
         print()
         print('', file=f)
@@ -399,7 +424,7 @@ with open('output.csv', 'w') as f:
     for station_id in misses_station_entry_rows:
         print(station_id)
         print(station_id, file=f)
-        append_row_2(presentation_sheet, [station_id], data_cell_format)
+        append_row_2(presentation_sheet, [station_id + ' Presentation Rank'], data_cell_format)
         presentation_station_entry_rows[station_id]['judge_ids'].sort()
 
         p_avg = {}
@@ -487,6 +512,79 @@ with open('output.csv', 'w') as f:
         print()
         print('', file=f)
         append_row_2(presentation_sheet, [], data_cell_format)
+
+    print("Difficulty\n")
+    print("Difficulty\n", file=f)
+    all_scores_station_entry_rows = sr_scores_station_entry_rows | dd_scores_station_entry_rows
+    for station_id in all_scores_station_entry_rows:
+        for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
+            print(station_id+ ' ' + judge_type_id)
+            print(station_id+ ' ' + judge_type_id, file=f)
+
+            all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'].items()))
+            all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
+            d_avg = {}
+            for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list']:
+                if len(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number]) > 0:
+                    d_avg[entry_number] = round(sum(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number])/len(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number]),2)
+                else:
+                    d_avg[entry_number] = 0
+            sorted_d_avg = sorted(d_avg.items(), key=lambda x: x[1], reverse=True)
+
+            row = 'Entry Number, Davg'
+            for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                row += ',' + judge_id + ' ' + judge_type_id
+            print(row)
+            print(row, file=f)
+
+            for entry_number, d in sorted_d_avg:
+                row = entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ',' + str(d)
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
+                        row += ',' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id].split(',')[0]
+                    else:
+                        row += ','
+                print(row)
+                print(row, file=f)
+
+            print()
+            print('', file=f)
+
+            row = 'Judge Info,' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] + ',Heat Count'
+            print(row)
+            print(row, file=f)
+            for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
+                row = judge_id + ' ' + judge_type_id
+                if all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] > 0:
+                    all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
+                    all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
+                row += ',' + ','.join([str(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key]) for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
+                print(row)
+                print(row, file=f)
+            else:
+                print()
+                print('', file=f)
+
+            all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
+
+            row = 'Entry Number,Judge Info,' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns']
+            print(row)
+            print(row, file=f)
+
+            for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    row = entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number]
+                    row += ',' + judge_id + ' ' + judge_type_id
+                    if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
+                        row += ',' + str(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id])
+                    else:
+                        row += ','
+                    print(row)
+                    print(row, file=f)
+            else:
+                print()
+                print('', file=f)
+
 
 set_column_widths(miss_sheet)
 set_column_widths(break_sheet)
