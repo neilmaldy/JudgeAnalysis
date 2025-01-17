@@ -1,6 +1,56 @@
 import json
 import csv
 import pprint
+import xlsxwriter
+
+def max_column_width(x, y):
+    return max(x, len(str(y)))
+
+
+def append_row(worksheet, list_to_append):
+    try:
+        worksheet.write_row(worksheet.row_counter, 0, list_to_append)
+        worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
+    except AttributeError:
+        worksheet.row_counter = 0
+        worksheet.column_widths = [len(x) for x in list_to_append]
+        worksheet.write_row(worksheet.row_counter, 0, list_to_append)
+    worksheet.row_counter += 1
+    return
+
+
+def append_row_2(worksheet, list_to_append, cell_format=None):
+
+    if not cell_format:
+        cell_format = data_cell_format
+    try:
+        worksheet.write_row(worksheet.row_counter, 0, list_to_append, cell_format)
+        worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
+    except AttributeError:
+        worksheet.row_counter = 0
+        worksheet.column_widths = [len(x) for x in list_to_append]
+        worksheet.write_row(worksheet.row_counter, 0, list_to_append, cell_format)
+    worksheet.row_counter += 1
+    return worksheet.row_counter
+
+
+def set_column_widths(worksheet):
+    last_column_id = None
+    last_column_width = None
+    for column_id, column_width in enumerate(worksheet.column_widths):
+        worksheet.set_column(column_id, column_id, min(50, column_width)+3.0)
+        last_column_id = column_id
+        last_column_width = column_width
+    if last_column_id and last_column_width:
+        worksheet.set_column(last_column_id, last_column_id, last_column_width + 5.0)
+    return
+
+wb = xlsxwriter.Workbook()
+miss_sheet = wb.add_worksheet('Misses')
+break_sheet = wb.add_worksheet('Breaks')
+presentation_sheet = wb.add_worksheet('Presentation')
+
+data_cell_format = wb.add_format({'border': 1})
 
 file = open('CompetitionScores_YMCA Super Skipper Judge Training_2025-01-06_16-53-04.tsv', 'r')
 dict_reader = csv.DictReader(file, delimiter='\t')
@@ -233,119 +283,123 @@ with open('output.csv', 'w') as f:
     print("Misses\n")
     print("Misses\n", file=f)
     for station_id in misses_station_entry_rows:
-        if station_id in station_id_to_session_name:
-            print(station_id_to_session_name[station_id])
-            print(station_id_to_session_name[station_id], file=f)
-        else:
-            print(station_id)
-            print(station_id, file=f)
+        print(station_id)
+        print(station_id, file=f)
+        current_row = append_row_2(miss_sheet, [station_id], data_cell_format)
         misses_station_entry_rows[station_id]['judge_ids'].sort()
-        row = 'Entry Number'
+        row = ['Entry Number']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
-            if False and judge_id in judge_id_to_name:
-                row += ',' + judge_id_to_name[judge_id]
-            else:
-                row += ',' + judge_id + ' ' + misses_station_entry_rows[station_id]['judge_types'][judge_id]
+            row.append(judge_id + ' ' + misses_station_entry_rows[station_id]['judge_types'][judge_id])
         # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
-        print(row)
-        print(row, file=f)
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        header_row = append_row_2(miss_sheet, row, data_cell_format)
+        num_columns = len(row)
 
         running_totals = {}
 
+        # change row strings to lists
         for entry_number in misses_station_entry_rows[station_id]['entries']:
-            row = entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number]
+            row = [entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number]]
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                    # row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                    row.append(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                     if judge_id not in running_totals:
                         running_totals[judge_id] = []
                     running_totals[judge_id].append(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
-                    row += ','
-            print(row)
-            print(row, file=f)
-        row = 'Totals'
+                    # row += ','
+                    row.append('')
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            last_row = append_row_2(miss_sheet, row, data_cell_format)
+        miss_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        row = ['Totals']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
-                row += ',' + str(sum(running_totals[judge_id]))
+                row.append(sum(running_totals[judge_id]))
             else:
-                row += ','
-        print(row)
-        print(row, file=f)
-        row = 'Averages'
+                row.append('')
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(miss_sheet, row, data_cell_format)
+
+        row = ['Averages']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
-                row += ',' + str(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
+                row.append(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
             else:
-                row += ','
-        print(row)
-        print(row, file=f)
+                row.append('')
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(miss_sheet, row, data_cell_format)
         print()
         print('', file=f)
+        append_row_2(miss_sheet, [], data_cell_format)
 
     print("Breaks\n")
     print("Breaks\n", file=f)
     for station_id in breaks_station_entry_rows:
-        if station_id in station_id_to_session_name:
-            print(station_id_to_session_name[station_id])
-            print(station_id_to_session_name[station_id], file=f)
-        else:
-            print(station_id)
-            print(station_id, file=f)
+        print(station_id)
+        print(station_id, file=f)
+        append_row_2(break_sheet, [station_id], data_cell_format)
+
         breaks_station_entry_rows[station_id]['judge_ids'].sort()
-        row = 'Entry Number'
+        row = ['Entry Number']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
-            if False and judge_id in judge_id_to_name:
-                row += ',' + judge_id_to_name[judge_id]
-            else:
-                row += ',' + judge_id + ' ' + breaks_station_entry_rows[station_id]['judge_types'][judge_id]
+            row.append(judge_id + ' ' + breaks_station_entry_rows[station_id]['judge_types'][judge_id])
         # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
-        print(row)
-        print(row, file=f)
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(break_sheet, row, data_cell_format)
 
         for entry_number in breaks_station_entry_rows[station_id]['entries']:
-            row = entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number]
+            row = [entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number]]
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                    row.append(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                     if judge_id not in running_totals:
                         running_totals[judge_id] = []
                     running_totals[judge_id].append(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
-                    row += ','
-            print(row)
-            print(row, file=f)
-        row = 'Totals'
+                    row.append('')
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            append_row_2(break_sheet, row, data_cell_format)
+
+        row = ['Totals']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
-                row += ',' + str(sum(running_totals[judge_id]))
+                row.append(sum(running_totals[judge_id]))
             else:
-                row += ','
-        print(row)
-        print(row, file=f)
-        row = 'Averages'
+                row.append('')
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(break_sheet, row, data_cell_format)
+
+        row = ['Averages']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
-                row += ',' + str(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
+                row.append(round(sum(running_totals[judge_id])/len(running_totals[judge_id]), 2))
             else:
-                row += ','
-        print(row)
-        print(row, file=f)
+                row.append('')
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(break_sheet, row, data_cell_format)
 
         print()
         print('', file=f)
+        append_row_2(break_sheet, [], data_cell_format)
 
     print("Presentation\n")
     print("Presentation\n", file=f)
 
     running_totals = {}
     for station_id in misses_station_entry_rows:
-        if station_id in station_id_to_session_name:
-            print(station_id_to_session_name[station_id])
-            print(station_id_to_session_name[station_id], file=f)
-        else:
-            print(station_id)
-            print(station_id, file=f)
+        print(station_id)
+        print(station_id, file=f)
+        append_row_2(presentation_sheet, [station_id], data_cell_format)
         presentation_station_entry_rows[station_id]['judge_ids'].sort()
 
         p_avg = {}
@@ -355,24 +409,31 @@ with open('output.csv', 'w') as f:
             else:
                 p_avg[entry_number] = 0
         sorted_p_avg = sorted(p_avg.items(), key=lambda x: x[1], reverse=True)
-        row = 'Entry,P avg,' + ','.join(presentation_station_entry_rows[station_id]['judge_ids'])
-        print(row)
-        print(row, file=f)
+        row = ['Entry', 'P avg']
+        row.extend(presentation_station_entry_rows[station_id]['judge_ids'])
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(presentation_sheet, row, data_cell_format)
+
         for entry_number, p_value in sorted_p_avg:
-            row = entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ',' + str(p_avg[entry_number])
+            row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number], p_avg[entry_number]]
             for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0])
+                    row.append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0])
                 else:
-                    row += ','
-            print(row)
-            print(row, file=f)
+                    row.append('')
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            append_row_2(presentation_sheet, row, data_cell_format)
         print()
         print('', file=f)
+        append_row_2(presentation_sheet, [], data_cell_format)
 
-        row = 'Judge, P avg, E avg, F avg, M avg, C avg, V avg'
-        print(row)
-        print(row, file=f)
+        row = ['Judge', 'P avg', 'E avg', 'F avg', 'M avg', 'C avg', 'V avg']
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(presentation_sheet, row, data_cell_format)
+
         for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
             p_list = [x[0] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
             e_list = [x[1] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
@@ -380,30 +441,41 @@ with open('output.csv', 'w') as f:
             m_list = [x[3] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
             c_list = [x[4] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
             v_list = [x[5] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-            row = judge_id
-            row += ',' + str(round(sum(p_list)/len(p_list), 2)) + ',' + str(round(sum(e_list)/len(e_list), 2)) + ',' + str(round(sum(f_list)/len(f_list), 2)) + ',' + str(round(sum(m_list)/len(m_list), 2)) + ',' + str(round(sum(c_list)/len(c_list), 2)) + ',' + str(round(sum(v_list)/len(v_list), 2))
-            print(row)
-            print(row, file=f)
-
+            row = [judge_id]
+            row.extend([round(sum(p_list)/len(p_list), 2), round(sum(e_list)/len(e_list), 2), round(sum(f_list)/len(f_list), 2), round(sum(m_list)/len(m_list), 2), round(sum(c_list)/len(c_list), 2), round(sum(v_list)/len(v_list), 2)])
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            append_row_2(presentation_sheet, row, data_cell_format)
         print()
         print('', file=f)
+        append_row_2(presentation_sheet, [], data_cell_format)
 
-        row = 'Entry Number, Judge, P, E, F, M, C, V'
-        print(row)
-        print(row, file=f)
+        row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V']
+        print(','.join([str(x) for x in row]))
+        print(','.join([str(x) for x in row]), file=f)
+        append_row_2(presentation_sheet, row, data_cell_format)
+
         for entry_number in presentation_station_entry_rows[station_id]['entries']:
             for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
-                row = entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ',' + judge_id
+                row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number], judge_id]
                 if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
-                    row += ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4]) + ',' + str(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5])
+                    row.extend([presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5]])
                     if judge_id not in running_totals:
                         running_totals[judge_id] = []
                     running_totals[judge_id].append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                 else:
-                    row += ',,,,,,'
-                print(row)
-                print(row, file=f)
-        
+                    row.append('','','','','','')
+                print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                append_row_2(presentation_sheet, row, data_cell_format)
+
         print()
         print('', file=f)
+        append_row_2(presentation_sheet, [], data_cell_format)
 
+set_column_widths(miss_sheet)
+set_column_widths(break_sheet)
+set_column_widths(presentation_sheet)
+wb.filename = 'output.xlsx'
+wb.close()
+print("Done")
