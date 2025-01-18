@@ -13,7 +13,10 @@ def append_row_2(worksheet, list_to_append, cell_format=None):
         cell_format = data_cell_format
     try:
         worksheet.write_row(worksheet.row_counter, 0, list_to_append, cell_format)
-        worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
+        if len(list_to_append) > len(worksheet.column_widths):
+            worksheet.column_widths.extend([1] * (len(list_to_append) - len(worksheet.column_widths)))
+        if list_to_append:
+            worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
     except AttributeError:
         worksheet.row_counter = 0
         worksheet.column_widths = [len(x) for x in list_to_append]
@@ -229,7 +232,8 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 temp_dict.pop('break', None)
                 temp_dict['d'] = round(judge_results['d'],2)
                 if 'columns' not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]:
-                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = ','.join(sorted(temp_dict.keys())) + ',Total'
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = sorted(temp_dict.keys())
+                    sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].append('Avg Clicks/Heat')
                 temp_list = []
                 total_score = 0
                 for key in sorted(temp_dict.keys()):
@@ -241,13 +245,15 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = tuple(temp_list)
                 if judge_id not in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
                     sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
-                    for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
+                    for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns']:
                         sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] = 0
                     sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] = 0  
                 if total_score > 0:
                     for key in sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]:
                         if key == 'heat_count':
                             sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += 1
+                        elif key == 'Avg Clicks/Heat':
+                            sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict['Total']
                         else:
                             sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict[key]
 
@@ -277,7 +283,8 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 temp_dict.pop('break', None)
                 temp_dict['d'] = round(judge_results['d'],2)
                 if 'columns' not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]:
-                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = ','.join(temp_dict.keys()) + ',Total'
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] = list(temp_dict.keys())
+                    dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].append('Avg Clicks/Heat')
                 temp_list = []
                 total_score = 0
                 for key in sorted(temp_dict.keys()):
@@ -289,13 +296,15 @@ for judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt']:
                 dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id] = tuple(temp_list)
                 if judge_id not in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
                     dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id] = {}
-                    for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'].split(','):
+                    for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns']:
                         dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] = 0
                     dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] = 0  
                 if total_score > 0:
                     for key in dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]:
                         if key == 'heat_count':
                             dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += 1
+                        elif key == 'Avg Clicks/Heat':
+                            dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict['Total']
                         else:
                             dd_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict[key]
 
@@ -335,7 +344,7 @@ with open('output.csv', 'w') as f:
             print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             last_row = append_row_2(miss_sheet, row, data_cell_format)
-        miss_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        miss_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
         row = ['Totals']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
@@ -345,7 +354,7 @@ with open('output.csv', 'w') as f:
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
         last_row = append_row_2(miss_sheet, row, data_cell_format)
-        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
 
         row = ['Averages']
         for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
@@ -356,7 +365,7 @@ with open('output.csv', 'w') as f:
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
         last_row = append_row_2(miss_sheet, row, data_cell_format)
-        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        miss_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
 
         print()
         print('', file=f)
@@ -391,7 +400,7 @@ with open('output.csv', 'w') as f:
             print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             last_row = append_row_2(break_sheet, row, data_cell_format)
-        break_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        break_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
         row = ['Totals']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
             if judge_id in running_totals:
@@ -401,7 +410,7 @@ with open('output.csv', 'w') as f:
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
         last_row = append_row_2(break_sheet, row, data_cell_format)
-        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
 
         row = ['Averages']
         for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
@@ -412,7 +421,7 @@ with open('output.csv', 'w') as f:
         print(','.join([str(x) for x in row]))
         print(','.join([str(x) for x in row]), file=f)
         last_row = append_row_2(break_sheet, row, data_cell_format)
-        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+        break_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
 
         print()
         print('', file=f)
@@ -539,6 +548,7 @@ with open('output.csv', 'w') as f:
             print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+            num_columns = len(row)
 
             for entry_number, d in sorted_d_avg:
                 row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number], d]
@@ -550,49 +560,63 @@ with open('output.csv', 'w') as f:
                 print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+            difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
             print()
             print('', file=f)
             append_row_2(difficulty_sheet, [], data_cell_format)
 
-            row = 'Judge Info,' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'] + ',Heat Count'
-            print(row)
-            print(row, file=f)
-            header_row = append_row_2(difficulty_sheet, row.split(','), data_cell_format)
-
+            row = ['Judge Info']
+            row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
+            row.append('Heat Count')
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+            num_columns = len(row)
             for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
                 row = [judge_id + ' ' + judge_type_id]
                 if all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] > 0:
                     all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
-                    all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Total']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
+                    all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
                 row.extend([all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
                 print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-            else:
-                print()
-                print('', file=f)
-                append_row_2(difficulty_sheet, [], data_cell_format)
+            difficulty_sheet.conditional_format(header_row-1, 2, last_row-1, num_columns-3, {'type': '3_color_scale'})
+            difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, 1, {'type': '3_color_scale'})
+            difficulty_sheet.conditional_format(header_row-1, num_columns-2, last_row-1, num_columns-2, {'type': '3_color_scale'})
+
+            print()
+            print('', file=f)
+            append_row_2(difficulty_sheet, [], data_cell_format)
 
             all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
 
-            row = 'Entry Number,Judge Info,' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns']
-            print(row)
-            print(row, file=f)
+            row = ['Entry Number', 'Judge Info']
+            row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
+            row[-1] = 'Total Clicks'
+            print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+            num_columns = len(row)
 
             for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
-                    row = entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number]
-                    row += ',' + judge_id + ' ' + judge_type_id
+                    row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number]]
+                    row.append(judge_id + ' ' + judge_type_id)
                     if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
-                        row += ',' + str(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id])
+                        row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id])
                     else:
-                        row += ','
-                    print(row)
-                    print(row, file=f)
-            else:
-                print()
-                print('', file=f)
+                        row.append('')
+                    print(','.join([str(x) for x in row]))
+                    print(','.join([str(x) for x in row]), file=f)
+                    last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+            difficulty_sheet.conditional_format(header_row-1, 2, last_row-1, num_columns-2, {'type': '3_color_scale'})
+            difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, 1, {'type': '3_color_scale'})
+            difficulty_sheet.conditional_format(header_row-1, num_columns-1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
+            print()
+            print('', file=f)
+            append_row_2(difficulty_sheet, [], data_cell_format)
 
 set_column_widths(miss_sheet)
 set_column_widths(break_sheet)
