@@ -4,6 +4,9 @@ import pprint
 import xlsxwriter
 import argparse
 from os import chdir, path
+from collections import defaultdict
+from time import sleep
+from sys import exit
 
 def max_column_width(x, y):
     return max(x, len(str(y)))
@@ -32,11 +35,11 @@ def set_column_widths(worksheet):
         last_column_id = None
         last_column_width = None
         for column_id, column_width in enumerate(worksheet.column_widths):
-            worksheet.set_column(column_id, column_id, min(50, column_width)+3.0)
+            worksheet.set_column(column_id, column_id, min(50, column_width)+1.0)
             last_column_id = column_id
             last_column_width = column_width
         if last_column_id and last_column_width:
-            worksheet.set_column(last_column_id, last_column_id, last_column_width + 5.0)
+            worksheet.set_column(last_column_id, last_column_id, last_column_width + 2.0)
     return
 
 def main():
@@ -53,19 +56,65 @@ def main():
 
     data_cell_format = wb.add_format({'border': 1})
     parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='')
-    args = parser.parse_args()
-    if args.filename:
-        # chdir(path.dirname(args.filename))
-        # filename = path.basename(args.filename)
-        filename = args.filename
-    else:
-        filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
-    file = open(filename, 'r')
-    dict_reader = csv.DictReader(file, delimiter='\t')
-    data = [row for row in dict_reader]
-    file.close()
+    try:
+        args = parser.parse_args()
+        if args.filename:
+            print("args.filename: ", args.filename)
+            sleep(0.2)
+            dirname = path.dirname(args.filename)
+            if dirname:
+                chdir(dirname)
+            filename = path.basename(args.filename)
+            print("Filename: ", filename)
+        else:
+            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
+            print('No scoring filename provided')
+            input('press enter to quit')
+            exit()
+    except Exception as e:
+        print(str(e))
+        print("Problem with scoring file")
+        input('press enter to quit')
+        exit()
+    print('Reading file: ', filename)
+    sleep(0.2)
+    # input('press enter')
+    try:
+        file = open(filename, 'r')
+        dict_reader = csv.DictReader(file, delimiter='\t')
+        data = [row for row in dict_reader]
+        file.close()
+        print('File read')
+        sleep(0.2)
+        # input('press enter')
+    except Exception as e:
+        print(str(e))
+        print("Problem reading scoring file")
+        input('press enter to quit')
+        exit()
+
+    entry_to_teamname = defaultdict(str)
+    if path.exists('entries.csv'):
+        try:
+            print("Reading entries.csv")
+            sleep(0.2)
+            # input('press enter')
+            file = open('entries.csv', 'r')
+            dict_reader = csv.DictReader(file)
+            for row in dict_reader:
+                entry_to_teamname[row['EntryNumber']] = row['TeamName']
+            file.close()
+            print("entries.csv read")
+            sleep(0.2)
+            # input('press enter')
+        except Exception as e:
+            print(str(e))
+            print("Problem reading entries.csv")
+            sleep(0.2)
 
     scores = {}
+    missing_station_ids = set()
     for row in data:
         try:
             judgedata = row['JudgeScoreDataString']
@@ -79,7 +128,9 @@ def main():
             score_sequence = str(row['ScoreSequence'])
             if not station_id:
                 station_id = '0000'
-                print("Station ID not found for entry number: ", entry_number)
+                if entry_number not in missing_station_ids:
+                    missing_station_ids.add(entry_number)
+                    print("Station ID not found for entry number: ", entry_number)
             judge_id = station_id + '-' + score_sequence
             is_scored = row['IsScored']
             total_score = row['TotalScore']
@@ -99,10 +150,11 @@ def main():
                 # pprint.pprint(judge_tally_data)
                 # pprint.pprint(judge_results)
         except Exception as e:
-            print(e)
+            print(str(e))
             print("Problem with entry number: ", entry_number)
 
     print("Scores parsed")
+    sleep(0.2)
 
     for judge_type in ['Dr', 'Dm', 'Dp', 'Db', 'Da', 'Dj', 'Dt', 'P', 'T', 'Shj', 'S']:
         if judge_type not in scores:
@@ -374,7 +426,7 @@ def main():
             num_columns = len(row)
 
             for entry_number in speed_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number]]
+                row = [entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in speed_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(speed_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -387,7 +439,7 @@ def main():
             if debugit: print()
             print('', file=f)
             append_row_2(speed_sheet, [], data_cell_format)
-            
+
         if debugit: print("Misses\n")
         print("Misses\n", file=f)
         for station_id in misses_station_entry_rows:
@@ -409,7 +461,7 @@ def main():
 
             # change row strings to lists
             for entry_number in misses_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number]]
+                row = [entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
                         # row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -468,7 +520,7 @@ def main():
             header_row = append_row_2(break_sheet, row, data_cell_format)
             num_columns = len(row)
             for entry_number in breaks_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number]]
+                row = [entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -533,7 +585,7 @@ def main():
             num_columns = len(row)
 
             for entry_number, p_value in sorted_p_avg:
-                row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number], p_avg[entry_number]]
+                row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], p_avg[entry_number]]
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0])
@@ -582,7 +634,7 @@ def main():
 
             for entry_number in presentation_station_entry_rows[station_id]['entries']:
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
-                    row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number], judge_id]
+                    row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], judge_id]
                     if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
                         row.extend([presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5]])
                         if judge_id not in running_totals:
@@ -611,7 +663,7 @@ def main():
             if station_id == '0000': continue
             for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
                 if debugit: print(station_id+ ' ' + judge_type_id)
-                print(station_id+ ' ' + judge_type_id, file=f)
+                print(station_id + ' ' + judge_type_id, file=f)
                 append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id], data_cell_format)
 
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'].items()))
@@ -633,7 +685,7 @@ def main():
                 num_columns = len(row)
 
                 for entry_number, d in sorted_d_avg:
-                    row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number], d]
+                    row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], d]
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                         if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
                             row.append(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0])
@@ -683,7 +735,7 @@ def main():
 
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
-                        row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number]]
+                        row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                         row.append(judge_id + ' ' + judge_type_id)
                         if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
                             row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id])
@@ -700,14 +752,15 @@ def main():
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
 
+    set_column_widths(speed_sheet)
     set_column_widths(miss_sheet)
     set_column_widths(break_sheet)
     set_column_widths(presentation_sheet)
     set_column_widths(difficulty_sheet)
-    wb.filename = 'output.xlsx'
+    wb.filename = filename.replace(' ', '_') + '-analysis.xlsx'
     wb.close()
     print("Done")
-
+    input('press enter to quit')
     
 if __name__ == '__main__':
     main()

@@ -1,0 +1,1 @@
+pyinstaller.exe analyze_scores.py --onefile --clean
