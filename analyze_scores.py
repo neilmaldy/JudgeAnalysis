@@ -4,7 +4,7 @@ import pprint
 import xlsxwriter
 import argparse
 from os import chdir, path
-from collections import defaultdict
+from collections import defaultdict, Counter
 from time import sleep
 from sys import exit
 
@@ -12,10 +12,8 @@ def max_column_width(x, y):
     return max(x, len(str(y)))
 
 
-def append_row_2(worksheet, list_to_append, cell_format=None):
+def append_row_2(worksheet, list_to_append, cell_format):
 
-    if not cell_format:
-        cell_format = data_cell_format
     try:
         worksheet.write_row(worksheet.row_counter, 0, list_to_append, cell_format)
         if len(list_to_append) > len(worksheet.column_widths):
@@ -67,11 +65,11 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            print('No scoring filename provided')
-            input('press enter to quit')
-            exit()
+            # print('No scoring filename provided')
+            # input('press enter to quit')
+            # exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -114,6 +112,7 @@ def main():
             sleep(0.2)
 
     scores = {}
+    adjustments = {}
     missing_station_ids = set()
     for row in data:
         try:
@@ -141,6 +140,11 @@ def main():
                 judge_score_data = json.loads(row['JudgeScoreDataString'])
                 judge_meta_data = judge_score_data['JudgeResults']['meta']
                 judge_tally_data = judge_score_data['TallySheet']['tally']
+                if judge_meta_data['judgeTypeId'] == 'P' and 'MarkSheet' in judge_score_data:
+                    adjustments[(entry_number, judge_id)] = []
+                    for mark in judge_score_data['MarkSheet']['marks']:
+                        if 'Adj' in mark['schema']:
+                            adjustments[(entry_number, judge_id)].append((mark['schema']))
                 judge_results = judge_score_data['JudgeResults']['result']
                 if judge_meta_data['judgeTypeId'] not in scores:
                     scores[judge_meta_data['judgeTypeId']] = {}
@@ -232,7 +236,14 @@ def main():
                 presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list'] = []
             if entry_number not in presentation_station_entry_rows[station_id]['entry_types']:
                 presentation_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
-            presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id] = (round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari'])
+            adjustment_counts = Counter(adjustments.get((entry_number, judge_id), []))
+            e_adjustments = adjustment_counts.get('entPlusAdj', 0) - adjustment_counts.get('entMinusAdj', 0)
+            f_adjustments = adjustment_counts.get('formPlusAdj', 0) - adjustment_counts.get('formMinusAdj', 0)
+            m_adjustments = adjustment_counts.get('musicPlusAdj', 0) - adjustment_counts.get('musicMinusAdj', 0)
+            c_adjustments = adjustment_counts.get('creaPlusAdj', 0) - adjustment_counts.get('creaMinusAdj', 0)
+            v_adjustments = adjustment_counts.get('variPlusAdj', 0) - adjustment_counts.get('variMinusAdj', 0)
+            total_adjustments = e_adjustments + f_adjustments + m_adjustments + c_adjustments + v_adjustments
+            presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id] = (round(judge_results['p'], 2), judge_tally_data['ent'], judge_tally_data['form'], judge_tally_data['music'], judge_tally_data['crea'], judge_tally_data['vari'], e_adjustments, f_adjustments, m_adjustments, c_adjustments, v_adjustments, total_adjustments)
             presentation_station_entry_rows[station_id]['entries'][entry_number]['p_list'].append(round(judge_results['p'], 2))
             if judge_id not in presentation_station_entry_rows[station_id]['judge_stats']:
                 presentation_station_entry_rows[station_id]['judge_stats'][judge_id] = []
@@ -475,7 +486,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(miss_sheet, row, data_cell_format)
-            miss_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
+            miss_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
             row = ['Totals']
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in running_totals:
@@ -532,7 +543,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(break_sheet, row, data_cell_format)
-            break_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
+            break_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
             row = ['Totals']
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in running_totals:
@@ -594,7 +605,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(presentation_sheet, row, data_cell_format)
-            presentation_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
             if debugit: print()
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
@@ -616,27 +627,28 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(presentation_sheet, row, data_cell_format)
-            presentation_sheet.conditional_format(header_row-1, 1, last_row-1, 1, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row-1, 2, last_row-1, 2, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row-1, 3, last_row-1, 3, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row-1, 4, last_row-1, 4, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row-1, 5, last_row-1, 5, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row-1, 6, last_row-1, 6, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 2, last_row-1, 2, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 3, last_row-1, 3, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 4, last_row-1, 4, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 5, last_row-1, 5, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 6, last_row-1, 6, {'type': '3_color_scale'})
 
             if debugit: print()
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
 
-            row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V']
+            row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V', 'E adj', 'F adj', 'M adj', 'C adj', 'V adj', 'Total adj']
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(presentation_sheet, row, data_cell_format)
-
+            last_entry_row = header_row
             for entry_number in presentation_station_entry_rows[station_id]['entries']:
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
                     row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], judge_id]
                     if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
-                        row.extend([presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5]])
+                        # row.extend([presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5]])
+                        row.extend(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                         if judge_id not in running_totals:
                             running_totals[judge_id] = []
                         running_totals[judge_id].append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -645,13 +657,15 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(presentation_sheet, row, data_cell_format)
-                presentation_sheet.conditional_format(header_row-1, 2, last_row-1, 2, {'type': '3_color_scale'})
-                presentation_sheet.conditional_format(header_row-1, 3, last_row-1, 3, {'type': '3_color_scale'})
-                presentation_sheet.conditional_format(header_row-1, 4, last_row-1, 4, {'type': '3_color_scale'})
-                presentation_sheet.conditional_format(header_row-1, 5, last_row-1, 5, {'type': '3_color_scale'})
-                presentation_sheet.conditional_format(header_row-1, 6, last_row-1, 6, {'type': '3_color_scale'})
-                presentation_sheet.conditional_format(header_row-1, 7, last_row-1, 7, {'type': '3_color_scale'})
-
+                presentation_sheet.conditional_format(last_entry_row, 2, last_row-1, 2, {'type': '3_color_scale'})
+                presentation_sheet.conditional_format(last_entry_row, 3, last_row-1, 3, {'type': '3_color_scale'})
+                presentation_sheet.conditional_format(last_entry_row, 4, last_row-1, 4, {'type': '3_color_scale'})
+                presentation_sheet.conditional_format(last_entry_row, 5, last_row-1, 5, {'type': '3_color_scale'})
+                presentation_sheet.conditional_format(last_entry_row, 6, last_row-1, 6, {'type': '3_color_scale'})
+                presentation_sheet.conditional_format(last_entry_row, 7, last_row-1, 7, {'type': '3_color_scale'})
+                last_entry_row = last_row
+            presentation_sheet.conditional_format(header_row, 8, last_row-1, 12, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 13, last_row-1, 13, {'type': '3_color_scale'})
             if debugit: print()
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
@@ -694,7 +708,7 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
                 if debugit: print()
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
@@ -715,9 +729,9 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row-1, 2, last_row-1, num_columns-3, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, 1, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row-1, num_columns-2, last_row-1, num_columns-2, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': '3_color_scale'})
 
                 if debugit: print()
                 print('', file=f)
@@ -744,9 +758,9 @@ def main():
                         if debugit: print(','.join([str(x) for x in row]))
                         print(','.join([str(x) for x in row]), file=f)
                         last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row-1, 2, last_row-1, num_columns-2, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row-1, 1, last_row-1, 1, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row-1, num_columns-1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-2, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, num_columns-1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
                 if debugit: print()
                 print('', file=f)
