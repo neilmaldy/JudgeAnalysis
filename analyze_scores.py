@@ -65,7 +65,8 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
+            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
             # print('No scoring filename provided')
             # input('press enter to quit')
@@ -427,26 +428,51 @@ def main():
             print('Station: ' + station_id, file=f)
             append_row_2(speed_sheet, ['Station: ' + station_id], data_cell_format)
 
+            cummulative_error = {}
             speed_station_entry_rows[station_id]['judge_ids'].sort()
             row = ['Entry Number']
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id)
+                cummulative_error[judge_id] = 0
+            row.append('Calculated Score')
+            num_columns = len(row)
+            for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
+                row.append(judge_id + ' Diff')
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(speed_sheet, row, data_cell_format)
-            num_columns = len(row)
 
             for entry_number in speed_station_entry_rows[station_id]['entries']:
                 row = [entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
+                speed_scores = []
                 for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in speed_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(speed_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                        speed_scores.append(speed_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                     else:
                         row.append('')
+                        speed_scores.append(0)
+                sorted_speed_scores = sorted(speed_scores)
+                if len(sorted_speed_scores) == 3:
+                    if sorted_speed_scores[1] - sorted_speed_scores[0] < sorted_speed_scores[2] - sorted_speed_scores[1]:
+                        calculated_score = round((sorted_speed_scores[0] + sorted_speed_scores[1]) / 2.0, 1)
+                    else:
+                        calculated_score = round((sorted_speed_scores[1] + sorted_speed_scores[2]) / 2.0, 1)
+                    row.append(calculated_score)
+                    for speed_score in speed_scores:
+                        row.append(abs(round(calculated_score - speed_score, 1)))
+                else:
+                    calculated_score = 0
+                    row.append(calculated_score)
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
                 speed_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+            speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
+            speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
+            speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
+            speed_sheet.write_formula('H' + str(last_row + 1), '=SUM(H' + str(header_row+1) + ':H' + str(last_row) + ')')
+            speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
             if debugit: print()
             print('', file=f)
             append_row_2(speed_sheet, [], data_cell_format)
