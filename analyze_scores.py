@@ -8,16 +8,30 @@ from collections import defaultdict, Counter
 from time import sleep
 from sys import exit
 
+judge_id_to_name = defaultdict(str)
+
 def max_column_width(x, y):
     return max(x, len(str(y)))
 
 
 def append_row_2(worksheet, list_to_append, cell_format):
-
+    global judge_id_to_name
+    if len(judge_id_to_name):
+        temp_list = list_to_append.copy()
+        for i, item in enumerate(temp_list):
+            try:
+                judge_id = item.split()[0]
+                if '-' in judge_id:
+                    temp_text = item + ' ' + judge_id_to_name[judge_id]
+                    list_to_append[i] = temp_text
+            except Exception as e:
+                pass
     try:
         worksheet.write_row(worksheet.row_counter, 0, list_to_append, cell_format)
         if len(list_to_append) > len(worksheet.column_widths):
             worksheet.column_widths.extend([1] * (len(list_to_append) - len(worksheet.column_widths)))
+        if len(worksheet.column_widths) > len(list_to_append):
+            list_to_append.extend([''] * (len(worksheet.column_widths) - len(list_to_append)))
         if list_to_append:
             worksheet.column_widths = list(map(max_column_width, worksheet.column_widths, list_to_append))
     except AttributeError:
@@ -33,11 +47,11 @@ def set_column_widths(worksheet):
         last_column_id = None
         last_column_width = None
         for column_id, column_width in enumerate(worksheet.column_widths):
-            worksheet.set_column(column_id, column_id, min(50, column_width)+1.0)
+            worksheet.set_column(column_id, column_id, min(50, column_width*0.85)+1.0)
             last_column_id = column_id
             last_column_width = column_width
-        if last_column_id and last_column_width:
-            worksheet.set_column(last_column_id, last_column_id, last_column_width + 2.0)
+        if False and last_column_id and last_column_width:
+            worksheet.set_column(last_column_id, last_column_id, last_column_width)
     return
 
 def main():
@@ -66,11 +80,11 @@ def main():
             print("Filename: ", filename)
         else:
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
-            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            print('No scoring filename provided')
-            input('press enter to quit')
-            exit()
+            # print('No scoring filename provided')
+            # input('press enter to quit')
+            # exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -112,6 +126,23 @@ def main():
             print("Problem reading entries.csv")
             sleep(0.2)
 
+    if path.exists('judges.tsv'):
+        try:
+            print("Reading judges.tsv")
+            sleep(0.2)
+            # input('press enter')
+            file = open('judges.tsv', 'r')
+            dict_reader = csv.DictReader(file, delimiter='\t')
+            for row in dict_reader:
+                judge_id_to_name[row['JudgeID']] = row['JudgeName']
+            file.close()
+            print("judges.tsv read")
+            sleep(0.2)
+            # input('press enter')
+        except Exception as e:
+            print(str(e))
+            print("Problem reading judges.tsv")
+            sleep(0.2)
     scores = {}
     adjustments = {}
     missing_station_ids = set()
