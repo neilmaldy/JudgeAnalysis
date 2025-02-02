@@ -80,7 +80,7 @@ def main():
             print("Filename: ", filename)
         else:
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
-            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-01_21-38-21.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
             print('No scoring filename provided')
             input('press enter to quit')
@@ -125,6 +125,8 @@ def main():
             print(str(e))
             print("Problem reading entries.csv")
             sleep(0.2)
+    else:
+        print("entries.csv not found, team names will not be included")
 
     if path.exists('judges.tsv'):
         try:
@@ -143,6 +145,9 @@ def main():
             print(str(e))
             print("Problem reading judges.tsv")
             sleep(0.2)
+    else:
+        print("judges.tsv not found, judge names will not be included")
+
     scores = {}
     adjustments = {}
     missing_station_ids = set()
@@ -230,7 +235,8 @@ def main():
                 if entry_number not in speed_station_entry_rows[station_id]['entry_types']:
                     speed_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
                 speed_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_tally_data['step']
-            
+    print("Speed data parsed")
+
     for entry_number in scores['P']:
         if debugit: print(entry_number)
         for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['P'][entry_number], key=lambda x: x[1]):
@@ -492,6 +498,11 @@ def main():
                     row.append(calculated_score)
                     for speed_score in speed_scores:
                         row.append(abs(round(calculated_score - speed_score, 1)))
+                elif len(sorted_speed_scores) > 3:
+                    calculated_score = round(sum(sorted_speed_scores[1:-1]) / (len(sorted_speed_scores) - 2), 1)
+                    row.append(calculated_score)
+                    for speed_score in speed_scores:
+                        row.append(abs(round(calculated_score - speed_score, 1)))
                 else:
                     calculated_score = 0
                     row.append(calculated_score)
@@ -500,10 +511,22 @@ def main():
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
                 speed_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
             speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
-            speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
-            speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
-            speed_sheet.write_formula('H' + str(last_row + 1), '=SUM(H' + str(header_row+1) + ':H' + str(last_row) + ')')
-            speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
+            if len(sorted_speed_scores) == 3:
+                sum_columns = ['F', 'G', 'H']
+            elif len(sorted_speed_scores) == 4:
+                sum_columns = ['G', 'H', 'I', 'J']
+            elif len(sorted_speed_scores) == 5:
+                sum_columns = ['H', 'I', 'J', 'K', 'L']
+            else:
+                sum_columns = []
+            if sum_columns:
+                for column in sum_columns:
+                    speed_sheet.write_formula(column + str(last_row + 1), '=SUM(' + column + str(header_row+1) + ':' + column + str(last_row) + ')')
+                speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns), {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
+            # speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
+            # speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
+            # speed_sheet.write_formula('H' + str(last_row + 1), '=SUM(H' + str(header_row+1) + ':H' + str(last_row) + ')')
+            # speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
             if debugit: print()
             print('', file=f)
             append_row_2(speed_sheet, [], data_cell_format)
