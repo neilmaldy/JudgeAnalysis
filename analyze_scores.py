@@ -80,11 +80,11 @@ def main():
             print("Filename: ", filename)
         else:
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
-            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-01_21-38-21.tsv'
+            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-06_23-25-31.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            print('No scoring filename provided')
-            input('press enter to quit')
-            exit()
+            # print('No scoring filename provided')
+            # input('press enter to quit')
+            # exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -175,6 +175,10 @@ def main():
             judge_is_scored = row['JudgeIsScored']
             if is_scored == 'True':
                 judge_score_data = json.loads(row['JudgeScoreDataString'])
+                if 'JudgeResults' not in judge_score_data:
+                    print("No judge results for entry number: " + entry_number + " judge_id: " + judge_id)
+                    continue
+                #todo check for DDCF and TeamShow
                 judge_meta_data = judge_score_data['JudgeResults']['meta']
                 judge_tally_data = judge_score_data['TallySheet']['tally']
                 if judge_meta_data['judgeTypeId'] == 'P' and 'MarkSheet' in judge_score_data:
