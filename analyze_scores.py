@@ -10,7 +10,7 @@ from sys import exit
 
 judge_id_to_name = defaultdict(str)
 
-def max_column_width(x, y):
+def max_column_width(x: int, y: str) -> int:
     return max(x, len(str(y)))
 
 
@@ -151,6 +151,7 @@ def main():
     scores = {}
     adjustments = {}
     missing_station_ids = set()
+    skipped_events = set()
     for row in data:
         try:
             judgedata = row['JudgeScoreDataString']
@@ -159,6 +160,11 @@ def main():
             session_id = row['SessionID']
             entry_number = row['EntryNumber']
             event_definition_abbr = row['EventDefinitionAbbr']
+            if event_definition_abbr in ['DDCF', 'SCTF']:
+                if event_definition_abbr not in skipped_events:
+                    print("Skipping event: ", event_definition_abbr)
+                    skipped_events.add(event_definition_abbr)
+                continue
             station_id = str(row['StationID'])
             station_sequence = str(row['StationSequence'])
             score_sequence = str(row['ScoreSequence'])
