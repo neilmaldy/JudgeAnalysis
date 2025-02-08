@@ -80,11 +80,11 @@ def main():
             print("Filename: ", filename)
         else:
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
-            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-06_23-25-31.tsv'
+            # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            # print('No scoring filename provided')
-            # input('press enter to quit')
-            # exit()
+            print('No scoring filename provided')
+            input('press enter to quit')
+            exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
