@@ -79,12 +79,13 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
+            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            print('No scoring filename provided')
-            input('press enter to quit')
-            exit()
+            # print('No scoring filename provided')
+            # input('press enter to quit')
+            # exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -765,6 +766,9 @@ def main():
         all_scores_station_entry_rows = sr_scores_station_entry_rows | dd_scores_station_entry_rows
         for station_id in all_scores_station_entry_rows:
             if station_id == '0000': continue
+            judge_scores = {}
+            judge_sorted_scores = {}
+            judge_scores_ranked = {}
             for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
                 if debugit: print(station_id+ ' ' + judge_type_id)
                 print(station_id + ' ' + judge_type_id, file=f)
@@ -787,18 +791,58 @@ def main():
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
                 num_columns = len(row)
-
                 for entry_number, d in sorted_d_avg:
                     row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], d]
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                        if judge_id not in judge_scores:
+                            judge_scores[judge_id] = {}
+                            judge_scores_ranked[judge_id] = {}
                         if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
                             row.append(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0])
+                            judge_scores[judge_id][entry_number] = all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0]
+                        else:
+                            row.append('')
+                            judge_scores[judge_id][entry_number] = 0
+                    if debugit: print(','.join([str(x) for x in row]))
+                    print(','.join([str(x) for x in row]), file=f)
+                    last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                if debugit: print()
+                print('', file=f)
+                append_row_2(difficulty_sheet, [], data_cell_format)
+
+                if debugit: print(station_id + ' ' + judge_type_id)
+                print(station_id + ' ' + judge_type_id, file=f)
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id], data_cell_format)
+
+                row = ['Entry Number', 'Rank']
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    row.append(judge_id + ' ' + judge_type_id)
+                if debugit: print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                num_columns = len(row)
+
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    judge_sorted_scores[judge_id] = dict(sorted(judge_scores[judge_id].items(), key=lambda item: item[1], reverse=True))
+                    rank = 1
+                    for entry_number in judge_sorted_scores[judge_id]:
+                        judge_scores_ranked[judge_id][entry_number] = rank
+                        rank += 1
+                rank = 1
+                for entry_number, d in sorted_d_avg:
+                    row = [entry_number + ' ' +
+                           all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][
+                               entry_number] + ' ' + entry_to_teamname[entry_number], rank]
+                    for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                        if judge_id in judge_scores_ranked:
+                            row.append(judge_scores_ranked[judge_id][entry_number])
                         else:
                             row.append('')
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                    rank += 1
                 if debugit: print()
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
@@ -819,9 +863,9 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': 'data_bar'})
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'data_bar'})
+                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': 'data_bar'})
 
                 if debugit: print()
                 print('', file=f)
