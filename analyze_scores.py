@@ -527,6 +527,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
+                speed_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 speed_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
             speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
             if len(sorted_speed_scores) == 3:
@@ -541,6 +542,7 @@ def main():
                 for column in sum_columns:
                     speed_sheet.write_formula(column + str(last_row + 1), '=SUM(' + column + str(header_row+1) + ':' + column + str(last_row) + ')')
                 speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns), {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
+                # speed_sheet.set_row(last_row, None, None, {'collapsed': True})
             # speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
             # speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
             # speed_sheet.write_formula('H' + str(last_row + 1), '=SUM(H' + str(header_row+1) + ':H' + str(last_row) + ')')
@@ -588,7 +590,9 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(miss_sheet, row, data_cell_format)
+                miss_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
             miss_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
+            
             row = ['Totals']
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 if judge_id in running_totals:
@@ -649,6 +653,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(break_sheet, row, data_cell_format)
+                break_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
             break_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'min_color': '#80FF80', 'mid_color': '#FFFF80', 'max_color': '#FF8080'})
             row = ['Totals']
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
@@ -732,6 +737,7 @@ def main():
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(presentation_sheet, row, data_cell_format)
+            presentation_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
             num_columns = len(row)
 
             for entry_number, p_value in sorted_p_avg:
@@ -753,6 +759,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(presentation_sheet, row, data_cell_format)
+                presentation_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
             # presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
             for column in range(1, num_columns):
                 presentation_sheet.conditional_format(header_row, column, last_row-1, column, {'type': '3_color_scale'})
@@ -767,6 +774,7 @@ def main():
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(presentation_sheet, row, data_cell_format)
+            presentation_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
             num_columns = len(row)
 
             for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
@@ -790,6 +798,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(presentation_sheet, row, data_cell_format)
+                presentation_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 rank += 1
             presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': 'data_bar'})
             if debugit: print()
@@ -801,6 +810,7 @@ def main():
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(presentation_sheet, row, data_cell_format)
+            presentation_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
             last_entry_row = header_row
             for entry_number in presentation_station_entry_rows[station_id]['entries']:
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
@@ -820,6 +830,7 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(presentation_sheet, row, data_cell_format)
+                    presentation_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 presentation_sheet.conditional_format(last_entry_row, 2, last_row-1, 2, {'type': '3_color_scale'})
                 presentation_sheet.conditional_format(last_entry_row, 3, last_row-1, 3, {'type': '3_color_scale'})
                 presentation_sheet.conditional_format(last_entry_row, 4, last_row-1, 4, {'type': '3_color_scale'})
@@ -888,6 +899,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                difficulty_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
                 num_columns = len(row)
                 for entry_number, d in sorted_d_avg:
                     if args.anonymous:
@@ -908,6 +920,7 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                    difficulty_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
                 if debugit: print()
                 print('', file=f)
@@ -923,6 +936,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                difficulty_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
                 num_columns = len(row)
 
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
@@ -946,6 +960,7 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                    difficulty_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                     rank += 1
                 difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': 'data_bar'})
                 if debugit: print()
@@ -961,6 +976,7 @@ def main():
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                difficulty_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
                 num_columns = len(row)
                 last_entry_row = header_row
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
@@ -978,6 +994,7 @@ def main():
                         if debugit: print(','.join([str(x) for x in row]))
                         print(','.join([str(x) for x in row]), file=f)
                         last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                        difficulty_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                     difficulty_sheet.conditional_format(last_entry_row, 3, last_row-1, num_columns-2, {'type': '3_color_scale'})
                     difficulty_sheet.conditional_format(last_entry_row, 2, last_row-1, 2, {'type': '3_color_scale', 'min_type': 'num', 'min_value': 0})
                     last_entry_row = last_row
