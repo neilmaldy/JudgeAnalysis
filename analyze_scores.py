@@ -47,7 +47,7 @@ def set_column_widths(worksheet):
         last_column_id = None
         last_column_width = None
         for column_id, column_width in enumerate(worksheet.column_widths):
-            worksheet.set_column(column_id, column_id, min(50, column_width*0.85)+1.0)
+            worksheet.set_column(column_id, column_id, min(20, column_width*0.85)+1.0)
             last_column_id = column_id
             last_column_width = column_width
         if False and last_column_id and last_column_width:
@@ -67,7 +67,9 @@ def main():
     difficulty_sheet = wb.add_worksheet('Difficulty')
 
     data_cell_format = wb.add_format({'border': 1})
-    parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='')
+    bold_cell_format = wb.add_format({'bold': True})
+    parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='', help='Scoring file name')
+    parser.add_argument('-a', '--anonymous', help='Do not include entry numbers', action='store_true')
     try:
         args = parser.parse_args()
         if args.filename:
@@ -79,13 +81,14 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-01-18_17-12-05.tsv'
+            # filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
+            # args.anonymous = True
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            # print('No scoring filename provided')
-            # input('press enter to quit')
-            # exit()
+            print('No scoring filename provided')
+            input('press enter to quit')
+            exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -473,8 +476,8 @@ def main():
         for station_id in speed_station_entry_rows:
             if station_id == '0000': continue
             if debugit: print('Station: ' + station_id)
-            print('Station: ' + station_id, file=f)
-            append_row_2(speed_sheet, ['Station: ' + station_id], data_cell_format)
+            print('Station: ' + station_id + ' speed scores and cummulative difference from calculated score', file=f)
+            append_row_2(speed_sheet, ['Station: ' + station_id + ' Speed scores and cummulative difference from calculated score'], bold_cell_format)
 
             cummulative_error = {}
             speed_station_entry_rows[station_id]['judge_ids'].sort()
@@ -488,10 +491,14 @@ def main():
                 row.append(judge_id + ' Diff')
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
-            header_row = append_row_2(speed_sheet, row, data_cell_format)
+            header_row = append_row_2(speed_sheet, row, bold_cell_format)
 
             for entry_number in speed_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
+                if args.anonymous:
+                    my_entry_number = 'Entry n'
+                else:
+                    my_entry_number = entry_number
+                row = [my_entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 speed_scores = []
                 for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in speed_station_entry_rows[station_id]['entries'][entry_number]:
@@ -548,7 +555,7 @@ def main():
             if station_id == '0000': continue
             if debugit: print(station_id)
             print(station_id, file=f)
-            current_row = append_row_2(miss_sheet, [station_id + ' Misses'], data_cell_format)
+            current_row = append_row_2(miss_sheet, [station_id + ' Misses'], bold_cell_format)
             misses_station_entry_rows[station_id]['judge_ids'].sort()
             row = ['Entry Number']
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
@@ -563,7 +570,11 @@ def main():
 
             # change row strings to lists
             for entry_number in misses_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
+                if args.anonymous:
+                    my_entry_number = 'Entry n'
+                else:
+                    my_entry_number = entry_number
+                row = [my_entry_number + ' ' + misses_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in misses_station_entry_rows[station_id]['entries'][entry_number]:
                         # row += ',' + str(misses_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -610,7 +621,7 @@ def main():
             if station_id == '0000': continue
             if debugit: print(station_id)
             print(station_id, file=f)
-            append_row_2(break_sheet, [station_id + ' Breaks'], data_cell_format)
+            append_row_2(break_sheet, [station_id + ' Breaks'], bold_cell_format)
 
             breaks_station_entry_rows[station_id]['judge_ids'].sort()
             row = ['Entry Number']
@@ -622,7 +633,11 @@ def main():
             header_row = append_row_2(break_sheet, row, data_cell_format)
             num_columns = len(row)
             for entry_number in breaks_station_entry_rows[station_id]['entries']:
-                row = [entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
+                if args.anonymous:
+                    my_entry_number = 'Entry n'
+                else:
+                    my_entry_number = entry_number
+                row = [my_entry_number + ' ' + breaks_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in breaks_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(breaks_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -668,8 +683,11 @@ def main():
         for station_id in misses_station_entry_rows:
             if station_id == '0000': continue
             if debugit: print(station_id)
+            judge_scores = {}
+            judge_sorted_scores = {}
+            judge_scores_ranked = {}
             print(station_id, file=f)
-            append_row_2(presentation_sheet, [station_id + ' Presentation Rank'], data_cell_format)
+            append_row_2(presentation_sheet, [station_id + ' Avg Presentation vs Judges Score'], bold_cell_format)
             presentation_station_entry_rows[station_id]['judge_ids'].sort()
 
             p_avg = {}
@@ -687,20 +705,69 @@ def main():
             num_columns = len(row)
 
             for entry_number, p_value in sorted_p_avg:
-                row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], p_avg[entry_number]]
+                if args.anonymous:
+                    my_entry_number = 'Entry n'
+                else:
+                    my_entry_number = entry_number
+                row = [my_entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], p_avg[entry_number]]
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                    if judge_id not in judge_scores:
+                        judge_scores[judge_id] = {}
+                        judge_scores_ranked[judge_id] = {}
                     if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0])
+                        judge_scores[judge_id][entry_number] = presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0]
+                    else:
+                        row.append('')
+                        judge_scores[judge_id][entry_number] = 0
+                if debugit: print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                last_row = append_row_2(presentation_sheet, row, data_cell_format)
+            # presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+            for column in range(1, num_columns):
+                presentation_sheet.conditional_format(header_row, column, last_row-1, column, {'type': '3_color_scale'})
+            if debugit: print()
+            print('', file=f)
+            append_row_2(presentation_sheet, [], data_cell_format)
+
+            print(station_id + ' Relative Rankings', file=f)
+            append_row_2(presentation_sheet, [station_id + ' Relative Rankings'], bold_cell_format)
+            row = ['Entry Number', 'Rank']
+            row.extend(presentation_station_entry_rows[station_id]['judge_ids'])
+            if debugit: print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(presentation_sheet, row, data_cell_format)
+            num_columns = len(row)
+
+            for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                judge_sorted_scores[judge_id] = dict(sorted(judge_scores[judge_id].items(), key=lambda item: item[1], reverse=True))
+                rank = 1
+                for entry_number in judge_sorted_scores[judge_id]:
+                    judge_scores_ranked[judge_id][entry_number] = rank
+                    rank += 1
+            rank = 1
+            for entry_number, p in sorted_p_avg:
+                if args.anonymous:
+                    my_entry_number = 'Entry n'
+                else:
+                    my_entry_number = entry_number
+                row = [my_entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], rank]
+                for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                    if judge_id in judge_scores_ranked:
+                        row.append(judge_scores_ranked[judge_id][entry_number])
                     else:
                         row.append('')
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(presentation_sheet, row, data_cell_format)
-            presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                rank += 1
+            presentation_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': 'data_bar'})
             if debugit: print()
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
 
+
+            append_row_2(presentation_sheet, [station_id + ' Presentation Score Averages'], bold_cell_format)
             row = ['Judge', 'P avg', 'E avg', 'F avg', 'M avg', 'C avg', 'V avg']
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
@@ -729,6 +796,7 @@ def main():
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
 
+            append_row_2(presentation_sheet, [station_id + ' Presentation Score Details'], bold_cell_format)
             row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V', 'E adj', 'F adj', 'M adj', 'C adj', 'V adj', 'Total adj']
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
@@ -736,7 +804,11 @@ def main():
             last_entry_row = header_row
             for entry_number in presentation_station_entry_rows[station_id]['entries']:
                 for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
-                    row = [entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], judge_id]
+                    if args.anonymous:
+                        my_entry_number = 'Entry n'
+                    else:
+                        my_entry_number = entry_number
+                    row = [my_entry_number + ' ' + presentation_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], judge_id]
                     if judge_id in presentation_station_entry_rows[station_id]['entries'][entry_number]:
                         # row.extend([presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][0], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][1], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][2], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][3], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][4], presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id][5]])
                         row.extend(presentation_station_entry_rows[station_id]['entries'][entry_number][judge_id])
@@ -771,8 +843,8 @@ def main():
             judge_scores_ranked = {}
             for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
                 if debugit: print(station_id+ ' ' + judge_type_id)
-                print(station_id + ' ' + judge_type_id, file=f)
-                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id], data_cell_format)
+                print(station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores', file=f)
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores'], bold_cell_format)
 
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'].items()))
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
@@ -792,7 +864,11 @@ def main():
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
                 num_columns = len(row)
                 for entry_number, d in sorted_d_avg:
-                    row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], d]
+                    if args.anonymous:
+                        my_entry_number = 'Entry n'
+                    else:
+                        my_entry_number = entry_number
+                    row = [my_entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], d]
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                         if judge_id not in judge_scores:
                             judge_scores[judge_id] = {}
@@ -812,8 +888,8 @@ def main():
                 append_row_2(difficulty_sheet, [], data_cell_format)
 
                 if debugit: print(station_id + ' ' + judge_type_id)
-                print(station_id + ' ' + judge_type_id, file=f)
-                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id], data_cell_format)
+                print(station_id + ' ' + judge_type_id + ' Relative Rankings', file=f)
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Relative Rankings'], bold_cell_format)
 
                 row = ['Entry Number', 'Rank']
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
@@ -831,9 +907,11 @@ def main():
                         rank += 1
                 rank = 1
                 for entry_number, d in sorted_d_avg:
-                    row = [entry_number + ' ' +
-                           all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][
-                               entry_number] + ' ' + entry_to_teamname[entry_number], rank]
+                    if args.anonymous:
+                        my_entry_number = 'Entry n'
+                    else:
+                        my_entry_number = entry_number
+                    row = [my_entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number], rank]
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                         if judge_id in judge_scores_ranked:
                             row.append(judge_scores_ranked[judge_id][entry_number])
@@ -843,10 +921,12 @@ def main():
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
                     rank += 1
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': 'data_bar'})
                 if debugit: print()
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
 
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Cummulative scores across all heats'], bold_cell_format)
                 row = ['Judge Info']
                 row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
                 row.append('Heat Count')
@@ -863,9 +943,9 @@ def main():
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': 'data_bar'})
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'data_bar'})
-                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': 'data_bar'})
+                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
+                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
 
                 if debugit: print()
                 print('', file=f)
@@ -873,6 +953,7 @@ def main():
 
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
 
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Score Details'], bold_cell_format)
                 row = ['Entry Number', 'Judge Info']
                 row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
                 row[-1] = 'Total Clicks'
@@ -883,7 +964,11 @@ def main():
 
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
-                        row = [entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
+                        if args.anonymous:
+                            my_entry_number = 'Entry n'
+                        else:
+                            my_entry_number = entry_number
+                        row = [my_entry_number + ' ' + all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                         row.append(judge_id + ' ' + judge_type_id)
                         if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
                             row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id])
