@@ -683,12 +683,42 @@ def main():
         for station_id in misses_station_entry_rows:
             if station_id == '0000': continue
             if debugit: print(station_id)
+            presentation_station_entry_rows[station_id]['judge_ids'].sort()
+
+            append_row_2(presentation_sheet, [station_id + ' Presentation Score Averages'], bold_cell_format)
+            row = ['Judge', 'P avg', 'E avg', 'F avg', 'M avg', 'C avg', 'V avg']
+            if debugit: print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(presentation_sheet, row, data_cell_format)
+
+            for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
+                p_list = [x[0] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                e_list = [x[1] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                f_list = [x[2] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                m_list = [x[3] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                c_list = [x[4] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                v_list = [x[5] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
+                row = [judge_id]
+                row.extend([round(sum(p_list)/len(p_list), 2), round(sum(e_list)/len(e_list), 2), round(sum(f_list)/len(f_list), 2), round(sum(m_list)/len(m_list), 2), round(sum(c_list)/len(c_list), 2), round(sum(v_list)/len(v_list), 2)])
+                if debugit: print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                last_row = append_row_2(presentation_sheet, row, data_cell_format)
+            presentation_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 2, last_row-1, 2, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 3, last_row-1, 3, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 4, last_row-1, 4, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 5, last_row-1, 5, {'type': '3_color_scale'})
+            presentation_sheet.conditional_format(header_row, 6, last_row-1, 6, {'type': '3_color_scale'})
+
+            if debugit: print()
+            print('', file=f)
+            append_row_2(presentation_sheet, [], data_cell_format)
+
             judge_scores = {}
             judge_sorted_scores = {}
             judge_scores_ranked = {}
             print(station_id, file=f)
             append_row_2(presentation_sheet, [station_id + ' Avg Presentation vs Judges Score'], bold_cell_format)
-            presentation_station_entry_rows[station_id]['judge_ids'].sort()
 
             p_avg = {}
             for entry_number in presentation_station_entry_rows[station_id]['entries']:
@@ -766,36 +796,6 @@ def main():
             print('', file=f)
             append_row_2(presentation_sheet, [], data_cell_format)
 
-
-            append_row_2(presentation_sheet, [station_id + ' Presentation Score Averages'], bold_cell_format)
-            row = ['Judge', 'P avg', 'E avg', 'F avg', 'M avg', 'C avg', 'V avg']
-            if debugit: print(','.join([str(x) for x in row]))
-            print(','.join([str(x) for x in row]), file=f)
-            header_row = append_row_2(presentation_sheet, row, data_cell_format)
-
-            for judge_id in presentation_station_entry_rows[station_id]['judge_ids']:
-                p_list = [x[0] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                e_list = [x[1] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                f_list = [x[2] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                m_list = [x[3] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                c_list = [x[4] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                v_list = [x[5] for x in presentation_station_entry_rows[station_id]['judge_stats'][judge_id]]
-                row = [judge_id]
-                row.extend([round(sum(p_list)/len(p_list), 2), round(sum(e_list)/len(e_list), 2), round(sum(f_list)/len(f_list), 2), round(sum(m_list)/len(m_list), 2), round(sum(c_list)/len(c_list), 2), round(sum(v_list)/len(v_list), 2)])
-                if debugit: print(','.join([str(x) for x in row]))
-                print(','.join([str(x) for x in row]), file=f)
-                last_row = append_row_2(presentation_sheet, row, data_cell_format)
-            presentation_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row, 2, last_row-1, 2, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row, 3, last_row-1, 3, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row, 4, last_row-1, 4, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row, 5, last_row-1, 5, {'type': '3_color_scale'})
-            presentation_sheet.conditional_format(header_row, 6, last_row-1, 6, {'type': '3_color_scale'})
-
-            if debugit: print()
-            print('', file=f)
-            append_row_2(presentation_sheet, [], data_cell_format)
-
             append_row_2(presentation_sheet, [station_id + ' Presentation Score Details'], bold_cell_format)
             row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V', 'E adj', 'F adj', 'M adj', 'C adj', 'V adj', 'Total adj']
             if debugit: print(','.join([str(x) for x in row]))
@@ -843,11 +843,37 @@ def main():
             judge_scores_ranked = {}
             for judge_type_id in all_scores_station_entry_rows[station_id]['judge_type']:
                 if debugit: print(station_id+ ' ' + judge_type_id)
-                print(station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores', file=f)
-                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores'], bold_cell_format)
 
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']= dict(sorted(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'].items()))
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
+
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Cummulative scores across all heats'], bold_cell_format)
+                row = ['Judge Info']
+                row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
+                row.append('Heat Count')
+                if debugit: print(','.join([str(x) for x in row]))
+                print(','.join([str(x) for x in row]), file=f)
+                header_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                num_columns = len(row)
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
+                    row = [judge_id + ' ' + judge_type_id]
+                    if all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] > 0:
+                        all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
+                        all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
+                    row.extend([all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
+                    if debugit: print(','.join([str(x) for x in row]))
+                    print(','.join([str(x) for x in row]), file=f)
+                    last_row = append_row_2(difficulty_sheet, row, data_cell_format)
+                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
+                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
+
+                if debugit: print()
+                print('', file=f)
+                append_row_2(difficulty_sheet, [], data_cell_format)
+
+                print(station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores', file=f)
+                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores'], bold_cell_format)
                 d_avg = {}
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list']:
                     if len(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number]) > 0:
@@ -922,31 +948,6 @@ def main():
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
                     rank += 1
                 difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': 'data_bar'})
-                if debugit: print()
-                print('', file=f)
-                append_row_2(difficulty_sheet, [], data_cell_format)
-
-                append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Cummulative scores across all heats'], bold_cell_format)
-                row = ['Judge Info']
-                row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
-                row.append('Heat Count')
-                if debugit: print(','.join([str(x) for x in row]))
-                print(','.join([str(x) for x in row]), file=f)
-                header_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                num_columns = len(row)
-                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats']:
-                    row = [judge_id + ' ' + judge_type_id]
-                    if all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'] > 0:
-                        all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['d']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
-                        all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat'] = round(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['Avg Clicks/Heat']/all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]['heat_count'],2)
-                    row.extend([all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] for key in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id]])
-                    if debugit: print(','.join([str(x) for x in row]))
-                    print(','.join([str(x) for x in row]), file=f)
-                    last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-3, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
-                difficulty_sheet.conditional_format(header_row, num_columns-2, last_row-1, num_columns-2, {'type': 'data_bar', 'min_value': 0, 'min_type': 'num', })
-
                 if debugit: print()
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
