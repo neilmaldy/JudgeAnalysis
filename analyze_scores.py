@@ -961,7 +961,7 @@ def main():
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
                 num_columns = len(row)
-
+                last_entry_row = header_row
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries']:
                     for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                         if args.anonymous:
@@ -977,8 +977,11 @@ def main():
                         if debugit: print(','.join([str(x) for x in row]))
                         print(','.join([str(x) for x in row]), file=f)
                         last_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.conditional_format(header_row, 2, last_row-1, num_columns-2, {'type': '3_color_scale'})
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': '3_color_scale'})
+                    difficulty_sheet.conditional_format(last_entry_row, 3, last_row-1, num_columns-2, {'type': '3_color_scale'})
+                    difficulty_sheet.conditional_format(last_entry_row, 2, last_row-1, 2, {'type': '3_color_scale', 'min_type': 'num', 'min_value': 0})
+                    last_entry_row = last_row
+                # difficulty_sheet.conditional_format(header_row, 3, last_row-1, num_columns-2, {'type': '3_color_scale'})
+                # difficulty_sheet.conditional_format(header_row, 2, last_row-1, 2, {'type': '3_color_scale'})
                 difficulty_sheet.conditional_format(header_row, num_columns-1, last_row-1, num_columns-1, {'type': '3_color_scale'})
 
                 if debugit: print()
