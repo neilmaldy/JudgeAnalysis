@@ -487,6 +487,7 @@ def main():
                 cummulative_error[judge_id] = 0
             row.append('Calculated Score')
             num_columns = len(row)
+            num_judges = len(speed_station_entry_rows[station_id]['judge_ids'])
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id + ' Diff')
             if debugit: print(','.join([str(x) for x in row]))
@@ -529,7 +530,7 @@ def main():
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
                 speed_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 speed_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
-            speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
+            speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + num_judges -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
             if len(sorted_speed_scores) == 3:
                 sum_columns = ['F', 'G', 'H']
             elif len(sorted_speed_scores) == 4:
@@ -541,7 +542,7 @@ def main():
             if sum_columns:
                 for column in sum_columns:
                     speed_sheet.write_formula(column + str(last_row + 1), '=SUM(' + column + str(header_row+1) + ':' + column + str(last_row) + ')')
-                speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns), {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
+                speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns) -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
                 # speed_sheet.set_row(last_row, None, None, {'collapsed': True})
             # speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
             # speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
