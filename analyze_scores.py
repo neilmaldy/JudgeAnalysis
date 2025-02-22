@@ -81,14 +81,14 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            # filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
+            filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
             # args.anonymous = True
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
             print('No scoring filename provided')
-            input('press enter to quit')
-            exit()
+            # input('press enter to quit')
+            # exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -163,8 +163,8 @@ def main():
             session_name = row['SessionName']
             session_id = row['SessionID']
             entry_number = row['EntryNumber']
-            event_definition_abbr = row['EventDefinitionAbbr']
-            if event_definition_abbr in ['DDCF', 'SCTF']:
+            event_definition_abbr = row['EventDefinitionAbbr'] + '_' + row['GenderAbbr'] + '_' + row['AgeGroupName']
+            if row['EventDefinitionAbbr'] in ['DDCF', 'SCTF']:
                 if event_definition_abbr not in skipped_events:
                     print("Skipping event: ", event_definition_abbr)
                     skipped_events.add(event_definition_abbr)
