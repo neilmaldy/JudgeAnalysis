@@ -61,6 +61,7 @@ def main():
     debugit = False
     wb = xlsxwriter.Workbook()
     speed_sheet = wb.add_worksheet('Speed')
+    speed_by_event_sheet = wb.add_worksheet('Speed by Event')
     miss_sheet = wb.add_worksheet('Misses')
     break_sheet = wb.add_worksheet('Breaks')
     presentation_sheet = wb.add_worksheet('Presentation')
@@ -68,6 +69,7 @@ def main():
 
     data_cell_format = wb.add_format({'border': 1})
     bold_cell_format = wb.add_format({'bold': True})
+    blue_bg_cell_format = wb.add_format({'bg_color': '#CCE5FF', 'border': 1})
     parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='', help='Scoring file name')
     parser.add_argument('-a', '--anonymous', help='Do not include entry numbers', action='store_true')
     try:
@@ -86,7 +88,7 @@ def main():
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            print('No scoring filename provided')
+            # print('No scoring filename provided')
             # input('press enter to quit')
             # exit()
     except Exception as e:
@@ -112,7 +114,7 @@ def main():
         exit()
 
     entry_to_teamname = defaultdict(str)
-    if path.exists('entries.csv'):
+    if not args.anonymous and path.exists('entries.csv'):
         try:
             print("Reading entries.csv")
             sleep(0.2)
@@ -129,10 +131,12 @@ def main():
             print(str(e))
             print("Problem reading entries.csv")
             sleep(0.2)
+    elif args.anonymous:
+        print("anonymous flag set, team names will not be included")
     else:
         print("entries.csv not found, team names will not be included")
 
-    if path.exists('judges.tsv'):
+    if not args.anonymous and path.exists('judges.tsv'):
         try:
             print("Reading judges.tsv")
             sleep(0.2)
@@ -149,6 +153,8 @@ def main():
             print(str(e))
             print("Problem reading judges.tsv")
             sleep(0.2)
+    elif args.anonymous:
+        print("anonymous flag set, judge names will not be included")
     else:
         print("judges.tsv not found, judge names will not be included")
 
@@ -230,12 +236,14 @@ def main():
     presentation_station_entry_rows = {}
     breaks_station_entry_rows = {}
     speed_station_entry_rows = {}
+    speed_event_entry_rows = {}
 
     for speed_judge_type in ['Shj', 'S']:
         for entry_number in scores[speed_judge_type]:
             if debugit: print(entry_number)
             for event_definition_abbr, judge_id, judge_tally_data, judge_results in scores[speed_judge_type][entry_number]:
                 station_id = judge_id.split('-')[0]
+                judge_number = judge_id.split('-')[1]
                 if station_id == '0000': continue
                 if station_id not in speed_station_entry_rows:
                     speed_station_entry_rows[station_id] = {}
@@ -249,6 +257,20 @@ def main():
                 if entry_number not in speed_station_entry_rows[station_id]['entry_types']:
                     speed_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
                 speed_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_tally_data['step']
+
+                if event_definition_abbr not in speed_event_entry_rows:
+                    speed_event_entry_rows[event_definition_abbr] = {}
+                    speed_event_entry_rows[event_definition_abbr]['station_ids'] = {}
+                if station_id not in speed_event_entry_rows[event_definition_abbr]['station_ids']:
+                    speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id] = {}
+                    speed_event_entry_rows[event_definition_abbr]['judge_numbers'] = []
+                    speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'] = {}
+                if judge_number not in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
+                    speed_event_entry_rows[event_definition_abbr]['judge_numbers'].append(judge_number)
+                if entry_number not in speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries']:
+                    speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number] = {}
+                speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number] = judge_tally_data['step']
+
     print("Speed data parsed")
 
     for entry_number in scores['P']:
@@ -321,7 +343,7 @@ def main():
                 misses_station_entry_rows[station_id]['entry_types'][entry_number] = event_definition_abbr
             misses_station_entry_rows[station_id]['entries'][entry_number][judge_id] = judge_results['nm']
 
-            if event_definition_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF']:
+            if any(event_abbr in event_definition_abbr for event_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF']):  # any(substring in target_string for substring in list_of_strings)
                 if station_id not in breaks_station_entry_rows:
                     breaks_station_entry_rows[station_id] = {}
                     breaks_station_entry_rows[station_id]['judge_ids'] = []
@@ -343,7 +365,7 @@ def main():
         for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores['Dj'][entry_number], key=lambda x: x[1]):
             station_id = judge_id.split('-')[0]
             if station_id == '0000': continue
-            if event_definition_abbr in ['DDSF', 'DDPF']:
+            if any(event_abbr in event_definition_abbr for event_abbr in ['DDSF', 'DDPF']): # any(event_abbr in event_definition_abbr for event_abbr in ['DDSF', 'DDPF'])
                 if station_id not in breaks_station_entry_rows:
                     breaks_station_entry_rows[station_id] = {}
                     breaks_station_entry_rows[station_id]['judge_ids'] = []
@@ -368,7 +390,7 @@ def main():
             for event_definition_abbr, judge_id, judge_tally_data, judge_results in sorted(scores[judge_type_id][entry_number], key=lambda x: x[1]):
                 station_id = judge_id.split('-')[0]
                 if station_id == '0000': continue
-                if event_definition_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF'] and judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da']:
+                if any(event_abbr in event_definition_abbr for event_abbr in ['SRIF', 'SRPF', 'SRTF', 'WHPF']) and judge_type_id in ['Dr', 'Dm', 'Dp', 'Db', 'Da']:
                     if station_id not in sr_scores_station_entry_rows:
                         sr_scores_station_entry_rows[station_id] = {}
                         sr_scores_station_entry_rows[station_id]['judge_type'] = {}
@@ -418,7 +440,7 @@ def main():
                             else:
                                 sr_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_stats'][judge_id][key] += temp_dict[key]
 
-                if event_definition_abbr in ['DDSF', 'DDPF'] and judge_type_id in ['Dj', 'Dt']:
+                if any(event_abbr in event_definition_abbr for event_abbr in ['DDSF', 'DDPF']) and judge_type_id in ['Dj', 'Dt']:
                     if station_id not in dd_scores_station_entry_rows:
                         dd_scores_station_entry_rows[station_id] = {}
                         dd_scores_station_entry_rows[station_id]['judge_type'] = {}
@@ -473,13 +495,13 @@ def main():
     with open('output.csv', 'w') as f:
         if debugit: print("Speed\n")
         print("Speed\n", file=f)
+        cummulative_error = {}
+        calculated_scores = {}
         for station_id in speed_station_entry_rows:
             if station_id == '0000': continue
             if debugit: print('Station: ' + station_id)
             print('Station: ' + station_id + ' speed scores and cummulative difference from calculated score', file=f)
             append_row_2(speed_sheet, ['Station: ' + station_id + ' Speed scores and cummulative difference from calculated score'], bold_cell_format)
-
-            cummulative_error = {}
             speed_station_entry_rows[station_id]['judge_ids'].sort()
             row = ['Entry Number']
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
@@ -525,6 +547,7 @@ def main():
                 else:
                     calculated_score = 0
                     row.append(calculated_score)
+                calculated_scores[entry_number] = calculated_score
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
@@ -552,6 +575,53 @@ def main():
             print('', file=f)
             append_row_2(speed_sheet, [], data_cell_format)
 
+        if debugit: print("Speed by Event\n")
+        print("Speed by Event\n", file=f)
+        for event_definition_abbr in speed_event_entry_rows:
+            if debugit: print('Event: ' + event_definition_abbr)
+            print('Event: ' + event_definition_abbr, file=f)
+            append_row_2(speed_by_event_sheet, ['Event: ' + event_definition_abbr], bold_cell_format)
+            speed_event_entry_rows[event_definition_abbr]['judge_numbers'].sort()
+            row = ['StationID', 'Entry Number']
+            num_judges = len(speed_event_entry_rows[event_definition_abbr]['judge_numbers'])
+            for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
+                row.append(int(judge_number))
+            if debugit: print(','.join([str(x) for x in row]))
+            print(','.join([str(x) for x in row]), file=f)
+            header_row = append_row_2(speed_by_event_sheet, row, bold_cell_format)
+            num_columns = len(row)
+            sorted_station_ids = sorted(speed_event_entry_rows[event_definition_abbr]['station_ids'].keys())
+            color_row = True
+            for station_id in sorted_station_ids:
+                if station_id == '0000': continue
+                if debugit: print('Station: ' + station_id)
+
+                for entry_number in speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries']:
+                    if args.anonymous:
+                        my_entry_number = 'Entry n'
+                    else:
+                        my_entry_number = entry_number
+                    row = [int(station_id), int(entry_number)]
+                    for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
+                        row.append(speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number])
+                    row.append(calculated_scores[entry_number])
+                    for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
+                        row.append(abs(round(calculated_scores[entry_number] - speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number], 1)))
+                    if debugit: print(','.join([str(x) for x in row]))
+                    print(','.join([str(x) for x in row]), file=f)
+                    last_row = append_row_2(speed_by_event_sheet, row, data_cell_format)
+                    speed_by_event_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
+                    speed_by_event_sheet.conditional_format(last_row-1, 2, last_row-1, num_columns, {'type': '3_color_scale'})
+                speed_by_event_sheet.conditional_format(header_row, num_columns+1, last_row-1, num_columns + num_judges, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
+                if color_row:
+                    speed_by_event_sheet.conditional_format(header_row, 0, last_row-1, 0, {'type': 'duplicate', 'format': blue_bg_cell_format})
+                    speed_by_event_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'unique', 'format': blue_bg_cell_format})
+                color_row = not color_row
+                header_row = last_row
+            if debugit: print()
+            print('', file=f)
+            append_row_2(speed_by_event_sheet, [], data_cell_format)
+
         if debugit: print("Misses\n")
         print("Misses\n", file=f)
         for station_id in misses_station_entry_rows:
@@ -559,7 +629,7 @@ def main():
             if debugit: print(station_id)
             print(station_id, file=f)
             current_row = append_row_2(miss_sheet, [station_id + ' Misses'], bold_cell_format)
-            misses_station_entry_rows[station_id]['judge_ids'].sort()
+            misses_station_entry_rows[station_id]['judge_ids'] = sorted(misses_station_entry_rows[station_id]['judge_ids'], key=lambda x: int(x.replace('-', '')))
             row = ['Entry Number']
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id + ' ' + misses_station_entry_rows[station_id]['judge_types'][judge_id])
