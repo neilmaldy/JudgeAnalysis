@@ -83,14 +83,14 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
+            # filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
             # args.anonymous = True
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
             # filename = 'FCompetitionScores_Fast Feet and Freestyle Faceoff_2025-01-18_20-04-25.tsv'
-            # print('No scoring filename provided')
-            # input('press enter to quit')
-            # exit()
+            print('No scoring filename provided')
+            input('press enter to quit')
+            exit()
     except Exception as e:
         print(str(e))
         print("Problem with scoring file")
@@ -503,11 +503,11 @@ def main():
             print('Station: ' + station_id + ' speed scores and cummulative difference from calculated score', file=f)
             append_row_2(speed_sheet, ['Station: ' + station_id + ' Speed scores and cummulative difference from calculated score'], bold_cell_format)
             speed_station_entry_rows[station_id]['judge_ids'].sort()
-            row = ['Entry Number']
+            row = ['Entry']
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id)
                 cummulative_error[judge_id] = 0
-            row.append('Calculated Score')
+            row.append("Calc'd Score")
             num_columns = len(row)
             num_judges = len(speed_station_entry_rows[station_id]['judge_ids'])
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
@@ -582,14 +582,17 @@ def main():
             print('Event: ' + event_definition_abbr, file=f)
             append_row_2(speed_by_event_sheet, ['Event: ' + event_definition_abbr], bold_cell_format)
             speed_event_entry_rows[event_definition_abbr]['judge_numbers'].sort()
-            row = ['StationID', 'Entry Number']
+            row = ['StationID', 'Entry']
             num_judges = len(speed_event_entry_rows[event_definition_abbr]['judge_numbers'])
             for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
                 row.append(int(judge_number))
+            row.append("Calc'd Score")
+            num_columns = len(row)
+            for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
+                row.append(judge_number + ' Diff')
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(speed_by_event_sheet, row, bold_cell_format)
-            num_columns = len(row)
             sorted_station_ids = sorted(speed_event_entry_rows[event_definition_abbr]['station_ids'].keys())
             color_row = True
             for station_id in sorted_station_ids:
@@ -598,10 +601,9 @@ def main():
 
                 for entry_number in speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries']:
                     if args.anonymous:
-                        my_entry_number = 'Entry n'
+                        row = [int(station_id), 'Entry n']
                     else:
-                        my_entry_number = entry_number
-                    row = [int(station_id), int(entry_number)]
+                        row = [int(station_id), int(entry_number)]
                     for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
                         row.append(speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number])
                     row.append(calculated_scores[entry_number])
@@ -609,15 +611,14 @@ def main():
                         row.append(abs(round(calculated_scores[entry_number] - speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number], 1)))
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
-                    last_row = append_row_2(speed_by_event_sheet, row, data_cell_format)
+                    if color_row:
+                        last_row = append_row_2(speed_by_event_sheet, row, blue_bg_cell_format)
+                    else:
+                        last_row = append_row_2(speed_by_event_sheet, row, data_cell_format)
                     speed_by_event_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
-                    speed_by_event_sheet.conditional_format(last_row-1, 2, last_row-1, num_columns, {'type': '3_color_scale'})
-                speed_by_event_sheet.conditional_format(header_row, num_columns+1, last_row-1, num_columns + num_judges, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
-                if color_row:
-                    speed_by_event_sheet.conditional_format(header_row, 0, last_row-1, 0, {'type': 'duplicate', 'format': blue_bg_cell_format})
-                    speed_by_event_sheet.conditional_format(header_row, 1, last_row-1, 1, {'type': 'unique', 'format': blue_bg_cell_format})
+                    speed_by_event_sheet.conditional_format(last_row-1, 2, last_row-1, num_columns-1, {'type': '3_color_scale'})
                 color_row = not color_row
-                header_row = last_row
+            speed_by_event_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + num_judges-1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
             if debugit: print()
             print('', file=f)
             append_row_2(speed_by_event_sheet, [], data_cell_format)
@@ -630,7 +631,7 @@ def main():
             print(station_id, file=f)
             current_row = append_row_2(miss_sheet, [station_id + ' Misses'], bold_cell_format)
             misses_station_entry_rows[station_id]['judge_ids'] = sorted(misses_station_entry_rows[station_id]['judge_ids'], key=lambda x: int(x.replace('-', '')))
-            row = ['Entry Number']
+            row = ['Entry']
             for judge_id in misses_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id + ' ' + misses_station_entry_rows[station_id]['judge_types'][judge_id])
             # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
@@ -699,7 +700,7 @@ def main():
             append_row_2(break_sheet, [station_id + ' Breaks'], bold_cell_format)
 
             breaks_station_entry_rows[station_id]['judge_ids'].sort()
-            row = ['Entry Number']
+            row = ['Entry']
             for judge_id in breaks_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id + ' ' + breaks_station_entry_rows[station_id]['judge_types'][judge_id])
             # row = 'Entry Number,' + ','.join(station_entry_rows[station_id]['judge_ids'])
@@ -840,7 +841,7 @@ def main():
 
             print(station_id + ' Relative Rankings', file=f)
             append_row_2(presentation_sheet, [station_id + ' Relative Rankings'], bold_cell_format)
-            row = ['Entry Number', 'Rank']
+            row = ['Entry', 'Rank']
             row.extend(presentation_station_entry_rows[station_id]['judge_ids'])
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
@@ -877,7 +878,7 @@ def main():
             append_row_2(presentation_sheet, [], data_cell_format)
 
             append_row_2(presentation_sheet, [station_id + ' Presentation Score Details'], bold_cell_format)
-            row = ['Entry Number', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V', 'E adj', 'F adj', 'M adj', 'C adj', 'V adj', 'Total adj']
+            row = ['Entry', 'Judge', 'P', 'E', 'F', 'M', 'C', 'V', 'E adj', 'F adj', 'M adj', 'C adj', 'V adj', 'Total adj']
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(presentation_sheet, row, data_cell_format)
@@ -964,7 +965,7 @@ def main():
                         d_avg[entry_number] = 0
                 sorted_d_avg = sorted(d_avg.items(), key=lambda x: x[1], reverse=True)
 
-                row = ['Entry Number', 'Davg']
+                row = ['Entry', 'Davg']
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                     row.append(judge_id + ' ' + judge_type_id)
                 if debugit: print(','.join([str(x) for x in row]))
@@ -1001,7 +1002,7 @@ def main():
                 print(station_id + ' ' + judge_type_id + ' Relative Rankings', file=f)
                 append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Relative Rankings'], bold_cell_format)
 
-                row = ['Entry Number', 'Rank']
+                row = ['Entry', 'Rank']
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                     row.append(judge_id + ' ' + judge_type_id)
                 if debugit: print(','.join([str(x) for x in row]))
@@ -1041,7 +1042,7 @@ def main():
                 all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids'].sort()
 
                 append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Score Details'], bold_cell_format)
-                row = ['Entry Number', 'Judge Info']
+                row = ['Entry', 'Judge Info']
                 row.extend(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['columns'])
                 row[-1] = 'Total Clicks'
                 if debugit: print(','.join([str(x) for x in row]))
@@ -1078,6 +1079,7 @@ def main():
                 append_row_2(difficulty_sheet, [], data_cell_format)
 
     set_column_widths(speed_sheet)
+    set_column_widths(speed_by_event_sheet)
     set_column_widths(miss_sheet)
     set_column_widths(break_sheet)
     set_column_widths(presentation_sheet)
