@@ -83,7 +83,7 @@ def main():
             filename = path.basename(args.filename)
             print("Filename: ", filename)
         else:
-            # filename = 'CompetitionScores_US Trials 2025_2025-02-19_22-35-05.tsv'
+            # filename = 'CompetitionScores_Australian Rope Skipping Championship 2025_2025-06-17_22-09-33.tsv'
             # args.anonymous = True
             # filename = 'ZCompetitionScores_Zero Hour 2025_2025-01-18_20-04-06.tsv'
             # filename = 'CompetitionScores_YMCA Super Skipper Judge Training_2025-02-08_01-51-28.tsv'
@@ -164,6 +164,8 @@ def main():
     skipped_events = set()
     for row in data:
         try:
+            if row['JudgeIsScored'] != 'True':
+                continue
             judgedata = row['JudgeScoreDataString']
             competition_name = row['CompetitionName']
             session_name = row['SessionName']
@@ -605,10 +607,12 @@ def main():
                     else:
                         row = [int(station_id), int(entry_number)]
                     for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
-                        row.append(speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number])
+                        if judge_number in speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number]:
+                            row.append(speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number])
                     row.append(calculated_scores[entry_number])
                     for judge_number in speed_event_entry_rows[event_definition_abbr]['judge_numbers']:
-                        row.append(abs(round(calculated_scores[entry_number] - speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number], 1)))
+                        if judge_number in speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number]:
+                            row.append(abs(round(calculated_scores[entry_number] - speed_event_entry_rows[event_definition_abbr]['station_ids'][station_id]['entries'][entry_number][judge_number], 1)))
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     if color_row:
