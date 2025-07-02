@@ -122,7 +122,7 @@ def main():
             file = open('entries.csv', 'r')
             dict_reader = csv.DictReader(file)
             for row in dict_reader:
-                entry_to_teamname[row['EntryNumber']] = row['TeamName'] + ' r:' + str(row['Rank'])
+                entry_to_teamname[row['EntryNumber']] = row['TeamName'] + ' s/h:' + row['StationSequence'] + '/' + row['HeatNumber'].split('.')[0] + ' r:' + str(row['Rank'])
             file.close()
             print("entries.csv read")
             sleep(0.2)
