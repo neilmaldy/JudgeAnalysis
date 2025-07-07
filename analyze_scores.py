@@ -70,6 +70,7 @@ def main():
     data_cell_format = wb.add_format({'border': 1})
     bold_cell_format = wb.add_format({'bold': True})
     blue_bg_cell_format = wb.add_format({'bg_color': '#CCE5FF', 'border': 1})
+    two_decimal_format = wb.add_format({'num_format': 2})
     parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='', help='Scoring file name')
     parser.add_argument('-a', '--anonymous', help='Do not include entry numbers', action='store_true')
     try:
@@ -525,27 +526,40 @@ def main():
                     my_entry_number = entry_number
                 row = [my_entry_number + ' ' + speed_station_entry_rows[station_id]['entry_types'][entry_number] + ' ' + entry_to_teamname[entry_number]]
                 speed_scores = []
+                speed_scores_by_judge_number = {}
                 for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                     if judge_id in speed_station_entry_rows[station_id]['entries'][entry_number]:
                         row.append(speed_station_entry_rows[station_id]['entries'][entry_number][judge_id])
                         speed_scores.append(speed_station_entry_rows[station_id]['entries'][entry_number][judge_id])
+                        judge_number = judge_id.split('-')[1]
+                        speed_scores_by_judge_number[judge_number] = speed_station_entry_rows[station_id]['entries'][entry_number][judge_id]
                     else:
                         row.append('')
                         speed_scores.append(0)
                 sorted_speed_scores = sorted(speed_scores)
+                speed_scores_by_judge_number = dict(sorted(speed_scores_by_judge_number.items(), key=lambda item: item[1]))
+                sorted_judge_numbers = list(speed_scores_by_judge_number.keys())
                 if len(sorted_speed_scores) == 3:
-                    if sorted_speed_scores[1] - sorted_speed_scores[0] < sorted_speed_scores[2] - sorted_speed_scores[1]:
+                    if sorted_speed_scores[0] == sorted_speed_scores[1] == sorted_speed_scores[2]:
+                        calculated_score = round(sorted_speed_scores[0], 1)
+                        dropped_judge_number = ''
+                    elif sorted_speed_scores[1] - sorted_speed_scores[0] < sorted_speed_scores[2] - sorted_speed_scores[1]:
                         calculated_score = round((sorted_speed_scores[0] + sorted_speed_scores[1]) / 2.0, 1)
+                        dropped_judge_number = sorted_judge_numbers[2]
                     else:
                         calculated_score = round((sorted_speed_scores[1] + sorted_speed_scores[2]) / 2.0, 1)
+                        dropped_judge_number = sorted_judge_numbers[0]
                     row.append(calculated_score)
                     for speed_score in speed_scores:
-                        row.append(abs(round(calculated_score - speed_score, 1)))
+                        # row.append(abs(round(calculated_score - speed_score, 1)))
+                        row.append(round(speed_score - calculated_score, 1))
+                    row.append(dropped_judge_number)
                 elif len(sorted_speed_scores) > 3:
                     calculated_score = round(sum(sorted_speed_scores[1:-1]) / (len(sorted_speed_scores) - 2), 1)
                     row.append(calculated_score)
                     for speed_score in speed_scores:
-                        row.append(abs(round(calculated_score - speed_score, 1)))
+                        # row.append(abs(round(calculated_score - speed_score, 1)))
+                        row.append(round(speed_score - calculated_score, 1))
                 else:
                     calculated_score = 0
                     row.append(calculated_score)
@@ -555,19 +569,34 @@ def main():
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
                 speed_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
                 speed_sheet.conditional_format(last_row-1, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
-            speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + num_judges -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
+            # speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + num_judges -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red'})
+            speed_sheet.conditional_format(header_row, num_columns, last_row-1, num_columns + num_judges -1, {'type': '3_color_scale', 'mid_type': 'num', 'mid_value': 0.0, 'min_color': 'red', 'mid_color': 'white', 'max_color': 'blue'})
             if len(sorted_speed_scores) == 3:
                 sum_columns = ['F', 'G', 'H']
+                count_column = 'I'
+                column_to_judge_number = {'F': 1, 'G': 2, 'H': 3}
             elif len(sorted_speed_scores) == 4:
                 sum_columns = ['G', 'H', 'I', 'J']
+                count_column = None
             elif len(sorted_speed_scores) == 5:
                 sum_columns = ['H', 'I', 'J', 'K', 'L']
+                count_column = None
             else:
                 sum_columns = []
+                count_column = None
             if sum_columns:
                 for column in sum_columns:
-                    speed_sheet.write_formula(column + str(last_row + 1), '=SUM(' + column + str(header_row+1) + ':' + column + str(last_row) + ')')
+                    speed_sheet.write_formula(column + str(last_row + 1), '{=SUM(ABS(' + column + str(header_row+1) + ':' + column + str(last_row) + '))}')
+                    speed_sheet.write_formula(column + str(last_row + 2), '=AVERAGE(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                    speed_sheet.write_formula(column + str(last_row + 3), '=STDEV(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                    if count_column:
+                        speed_sheet.write_formula(column + str(last_row + 4), '=COUNTIF(' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',' + str(column_to_judge_number[column]) + ')')
                 speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns) -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
+                append_row_2(speed_sheet, ['Cummulative Error: '], bold_cell_format)
+                append_row_2(speed_sheet, ['Avgerage Error: '], bold_cell_format)
+                append_row_2(speed_sheet, ['Stdev: '], bold_cell_format)
+                if count_column:
+                    append_row_2(speed_sheet, ['Drop Count: '], bold_cell_format)
                 # speed_sheet.set_row(last_row, None, None, {'collapsed': True})
             # speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
             # speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
