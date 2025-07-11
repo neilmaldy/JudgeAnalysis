@@ -54,6 +54,19 @@ def set_column_widths(worksheet):
             worksheet.set_column(last_column_id, last_column_id, last_column_width)
     return
 
+def which_judge_is_dropped(judges_and_scores = None):
+    if not judges_and_scores:
+        return None
+    if len(judges_and_scores) != 3:
+        return None
+    sorted_judges = sorted(judges_and_scores, key=lambda x: x[1])
+    low_judge_id, low_score = sorted_judges[0]
+    mid_judge_id, mid_score = sorted_judges[1]
+    high_judge_id, high_score = sorted_judges[2]
+    if (high_score - mid_score) > (mid_score - low_score):
+        return high_judge_id
+    else:
+        return low_judge_id
 def main():
 
     parser = argparse.ArgumentParser(description='analyze_scores.py')
@@ -515,6 +528,8 @@ def main():
             num_judges = len(speed_station_entry_rows[station_id]['judge_ids'])
             for judge_id in speed_station_entry_rows[station_id]['judge_ids']:
                 row.append(judge_id + ' Diff')
+            if num_judges == 3:
+                row.append('Dropped Judge')
             if debugit: print(','.join([str(x) for x in row]))
             print(','.join([str(x) for x in row]), file=f)
             header_row = append_row_2(speed_sheet, row, bold_cell_format)
@@ -593,7 +608,7 @@ def main():
                         speed_sheet.write_formula(column + str(last_row + 4), '=COUNTIF(' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',' + str(column_to_judge_number[column]) + ')')
                 speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns) -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
                 append_row_2(speed_sheet, ['Cummulative Error: '], bold_cell_format)
-                append_row_2(speed_sheet, ['Avgerage Error: '], bold_cell_format)
+                append_row_2(speed_sheet, ['Average Error: '], bold_cell_format)
                 append_row_2(speed_sheet, ['Stdev: '], bold_cell_format)
                 if count_column:
                     append_row_2(speed_sheet, ['Drop Count: '], bold_cell_format)
@@ -1001,12 +1016,38 @@ def main():
                 row = ['Entry', 'Davg']
                 for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
                     row.append(judge_id + ' ' + judge_type_id)
+                last_judge_column = len(row) -1
+
+                if last_judge_column == 3:
+                    difference_columns = ['E', 'F']
+                    count_column = None
+                elif last_judge_column == 4:
+                    difference_columns = ['F', 'G', 'H']
+                    count_column = 'I'
+                    # Create a mapping from difference_columns to judge_ids
+                    column_to_judge_number = {}
+                    if difference_columns:
+                        for col, judge_id in zip(difference_columns, all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']):
+                            column_to_judge_number[col] = judge_id
+                elif last_judge_column == 5:
+                    difference_columns = ['G', 'H', 'I', 'J']
+                    count_column = None
+                else:
+                    difference_columns = None
+                    count_column = None
+                    
+                for judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']:
+                    row.append(judge_id + ' ' + judge_type_id + ' Diff')
+                num_columns = len(row)
+                if len(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['judge_ids']) == 3:
+                    row.append('Dropped Judge')
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 header_row = append_row_2(difficulty_sheet, row, data_cell_format)
-                difficulty_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
-                num_columns = len(row)
+                # difficulty_sheet.set_row(header_row-1, None, None, {'level':1, 'hidden': True})
                 for entry_number, d in sorted_d_avg:
+                    difficulty_scores = []
+                    judge_ids_and_judge_scores = []
                     if args.anonymous:
                         my_entry_number = 'Entry n'
                     else:
@@ -1019,14 +1060,35 @@ def main():
                         if judge_id in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number]:
                             row.append(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0])
                             judge_scores[judge_id][entry_number] = all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0]
+                            difficulty_scores.append(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0])
+                            judge_ids_and_judge_scores.append((judge_id, all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['entries'][entry_number][judge_id][0]))
                         else:
                             row.append('')
                             judge_scores[judge_id][entry_number] = 0
+                            difficulty_scores.append('')
+                    for difficulty_score in difficulty_scores:
+                        if difficulty_score != '':
+                            row.append(round(difficulty_score - d, 2))
+                        else:
+                            row.append('')
+                    if len(judge_ids_and_judge_scores) == 3:
+                        row.append(which_judge_is_dropped(judge_ids_and_judge_scores))
                     if debugit: print(','.join([str(x) for x in row]))
                     print(','.join([str(x) for x in row]), file=f)
                     last_row = append_row_2(difficulty_sheet, row, data_cell_format)
                     difficulty_sheet.set_row(last_row-1, None, None, {'level':1, 'hidden': True})
-                difficulty_sheet.conditional_format(header_row, 1, last_row-1, num_columns-1, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, 1, last_row-1, last_judge_column, {'type': '3_color_scale'})
+                difficulty_sheet.conditional_format(header_row, last_judge_column + 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'mid_type': 'num', 'mid_value': 0.0, 'min_color': 'red', 'mid_color': 'white', 'max_color': 'blue'})
+                if difference_columns:
+                    for column in difference_columns:
+                        difficulty_sheet.write_formula(column + str(last_row + 1), '=AVERAGE(' + column + str(header_row + 1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                        difficulty_sheet.write_formula(column + str(last_row + 2), '=STDEV(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                        if count_column:
+                            difficulty_sheet.write_formula(column + str(last_row + 3), '=COUNTIF(' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',"' + str(column_to_judge_number[column]) + '")')
+                append_row_2(difficulty_sheet, ['Average Error: '], bold_cell_format)
+                append_row_2(difficulty_sheet, ['Stdev: '], bold_cell_format)
+                if count_column:
+                    append_row_2(difficulty_sheet, ['Drop Count: '], bold_cell_format)
                 if debugit: print()
                 print('', file=f)
                 append_row_2(difficulty_sheet, [], data_cell_format)
