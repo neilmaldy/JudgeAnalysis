@@ -79,6 +79,9 @@ def main():
     break_sheet = wb.add_worksheet('Breaks')
     presentation_sheet = wb.add_worksheet('Presentation')
     difficulty_sheet = wb.add_worksheet('Difficulty')
+    diff_charts_sheet = wb.add_worksheet('Difficulty Charts')
+    difficulty_charts = []
+
 
     data_cell_format = wb.add_format({'border': 1})
     bold_cell_format = wb.add_format({'bold': True})
@@ -966,6 +969,7 @@ def main():
 
         if debugit: print("Difficulty\n")
         print("Difficulty\n", file=f)
+        current_chart_row = 1
         all_scores_station_entry_rows = sr_scores_station_entry_rows | dd_scores_station_entry_rows
         for station_id in all_scores_station_entry_rows:
             if station_id == '0000': continue
@@ -1005,6 +1009,7 @@ def main():
 
                 print(station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores', file=f)
                 append_row_2(difficulty_sheet, [station_id + ' ' + judge_type_id + ' Avg Diff vs Judge Scores'], bold_cell_format)
+
                 d_avg = {}
                 for entry_number in all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list']:
                     if len(all_scores_station_entry_rows[station_id]['judge_type'][judge_type_id]['d_list'][entry_number]) > 0:
@@ -1080,11 +1085,30 @@ def main():
                 difficulty_sheet.conditional_format(header_row, 1, last_row-1, last_judge_column, {'type': '3_color_scale'})
                 difficulty_sheet.conditional_format(header_row, last_judge_column + 1, last_row-1, num_columns-1, {'type': '3_color_scale', 'mid_type': 'num', 'mid_value': 0.0, 'min_color': 'red', 'mid_color': 'white', 'max_color': 'blue'})
                 if difference_columns:
+                    d_avg_range = "=Difficulty!$B$" + str(header_row + 1) + ":$B$" + str(last_row)
+                    judge_data_ranges = {}
+                    judge_id_ranges = {}
                     for column in difference_columns:
                         difficulty_sheet.write_formula(column + str(last_row + 1), '=AVERAGE(' + column + str(header_row + 1) + ':' + column + str(last_row) + ')', two_decimal_format)
                         difficulty_sheet.write_formula(column + str(last_row + 2), '=STDEV(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                        judge_data_ranges[column] = "=Difficulty!$" + column + "$" + str(header_row + 1) + ":$" + column + "$" + str(last_row) + ""
+                        judge_id_ranges[column] = "=Difficulty!$" + column + "$" + str(header_row)
                         if count_column:
                             difficulty_sheet.write_formula(column + str(last_row + 3), '=COUNTIF(' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',"' + str(column_to_judge_number[column]) + '")')
+                    temp_chart = wb.add_chart({'type': 'scatter'})
+                    for column in judge_data_ranges:
+                        temp_chart.add_series({
+                            'name': judge_id_ranges[column],
+                            'categories': d_avg_range,
+                            'values': judge_data_ranges[column],
+                            'marker': {'type': 'circle', 'size': 5},
+                        })
+                    temp_chart.set_title({'name': station_id + ' ' + judge_type_id})
+                    temp_chart.set_x_axis({'name': 'Average Difficulty', 'num_font': {'size': 10}})
+                    temp_chart.set_y_axis({'name': 'Difference from Average', 'num_font': {'size': 10}})
+                    diff_charts_sheet.insert_chart('A' + str(current_chart_row), temp_chart, {'x_scale': 1.8, 'y_scale': 1.8})
+                    difficulty_charts.append(temp_chart)
+                    current_chart_row += 30
                 append_row_2(difficulty_sheet, ['Average Error: '], bold_cell_format)
                 append_row_2(difficulty_sheet, ['Stdev: '], bold_cell_format)
                 if count_column:
