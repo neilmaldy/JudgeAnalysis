@@ -81,12 +81,13 @@ def main():
     difficulty_sheet = wb.add_worksheet('Difficulty')
     diff_charts_sheet = wb.add_worksheet('Difficulty Charts')
     difficulty_charts = []
-
+    speed_judge_summary_sheet = wb.add_worksheet('Speed Judge Summary')
 
     data_cell_format = wb.add_format({'border': 1})
     bold_cell_format = wb.add_format({'bold': True})
     blue_bg_cell_format = wb.add_format({'bg_color': '#CCE5FF', 'border': 1})
     two_decimal_format = wb.add_format({'num_format': 2})
+    percent_format = wb.add_format({'num_format': '0%'})
     parser.add_argument('filename', metavar='filename', type=str, nargs='?', default='', help='Scoring file name')
     parser.add_argument('-a', '--anonymous', help='Do not include entry numbers', action='store_true')
     try:
@@ -516,6 +517,8 @@ def main():
         print("Speed\n", file=f)
         cummulative_error = {}
         calculated_scores = {}
+        summary_row = append_row_2(speed_judge_summary_sheet, ['Station', 'Judge ID', 'Average Error', 'Standard Deviation', 'Number of Drops', '% Drops'], bold_cell_format)
+        station_start_row = summary_row + 1
         for station_id in speed_station_entry_rows:
             if station_id == '0000': continue
             if debugit: print('Station: ' + station_id)
@@ -596,25 +599,35 @@ def main():
             elif len(sorted_speed_scores) == 4:
                 sum_columns = ['G', 'H', 'I', 'J']
                 count_column = None
+                column_to_judge_number = {'G': 1, 'H': 2, 'I': 3, 'J': 4}
             elif len(sorted_speed_scores) == 5:
                 sum_columns = ['H', 'I', 'J', 'K', 'L']
                 count_column = None
+                column_to_judge_number = {'H': 1, 'I': 2, 'J': 3, 'K': 4, 'L': 5}
             else:
                 sum_columns = []
                 count_column = None
             if sum_columns:
+                station_end_row = station_start_row + len(sum_columns) - 1
                 for column in sum_columns:
+                    summary_row = append_row_2(speed_judge_summary_sheet, [station_id], bold_cell_format)
                     speed_sheet.write_formula(column + str(last_row + 1), '{=SUM(ABS(' + column + str(header_row+1) + ':' + column + str(last_row) + '))}')
                     speed_sheet.write_formula(column + str(last_row + 2), '=AVERAGE(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                    speed_judge_summary_sheet.write('B' + str(summary_row), int(column_to_judge_number[column]))
+                    speed_judge_summary_sheet.write_formula('C' + str(summary_row), '=ABS(AVERAGE(Speed!' + column + str(header_row+1) + ':' + column + str(last_row) + '))', two_decimal_format)
                     speed_sheet.write_formula(column + str(last_row + 3), '=STDEV(' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
+                    speed_judge_summary_sheet.write_formula('D' + str(summary_row), '=STDEV(Speed!' + column + str(header_row+1) + ':' + column + str(last_row) + ')', two_decimal_format)
                     if count_column:
                         speed_sheet.write_formula(column + str(last_row + 4), '=COUNTIF(' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',' + str(column_to_judge_number[column]) + ')')
+                        speed_judge_summary_sheet.write_formula('E' + str(summary_row), '=COUNTIF(Speed!' + count_column + str(header_row+1) + ':' + count_column + str(last_row) + ',' + str(column_to_judge_number[column]) + ')')
+                        speed_judge_summary_sheet.write_formula('F' + str(summary_row), '=$E' + str(summary_row) + '/SUM($E$' + str(station_start_row) + ':$E$' + str(station_end_row) + ')', percent_format)
                 speed_sheet.conditional_format(last_row, num_columns, last_row, num_columns + len(sum_columns) -1, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0})
                 append_row_2(speed_sheet, ['Cummulative Error: '], bold_cell_format)
                 append_row_2(speed_sheet, ['Average Error: '], bold_cell_format)
                 append_row_2(speed_sheet, ['Stdev: '], bold_cell_format)
                 if count_column:
                     append_row_2(speed_sheet, ['Drop Count: '], bold_cell_format)
+                station_start_row = station_end_row + 1    
                 # speed_sheet.set_row(last_row, None, None, {'collapsed': True})
             # speed_sheet.write_formula('F' + str(last_row + 1), '=SUM(F' + str(header_row+1) + ':F' + str(last_row) + ')')
             # speed_sheet.write_formula('G' + str(last_row + 1), '=SUM(G' + str(header_row+1) + ':G' + str(last_row) + ')')
@@ -623,6 +636,10 @@ def main():
             if debugit: print()
             print('', file=f)
             append_row_2(speed_sheet, [], data_cell_format)
+
+        speed_judge_summary_sheet.conditional_format(1, 2, station_end_row, 2, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0, 'min_type': 'num'})
+        speed_judge_summary_sheet.conditional_format(1, 3, station_end_row, 3, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0, 'min_type': 'num'})
+        speed_judge_summary_sheet.conditional_format(1, 5, station_end_row, 5, {'type': '2_color_scale', 'min_color': 'white', 'max_color': 'red', 'min_value': 0, 'max_value': 1, 'min_type': 'num', 'max_type': 'num'})
 
         if debugit: print("Speed by Event\n")
         print("Speed by Event\n", file=f)
