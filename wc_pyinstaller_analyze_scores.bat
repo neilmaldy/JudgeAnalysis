@@ -1,0 +1,1 @@
+pyinstaller.exe analyze_scores_wc.py --onefile --clean
