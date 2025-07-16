@@ -135,6 +135,29 @@ def main():
         exit()
 
     entry_to_teamname = defaultdict(str)
+    ai_speed_scores = {}
+
+    if path.exists('ai_speed_scores.csv'):
+        try:
+            print("Reading ai_speed_scores.csv")
+            sleep(0.2)
+            # input('press enter')
+            file = open('ai_speed_scores.csv', 'r')
+            dict_reader = csv.DictReader(file)
+            for row in dict_reader:
+                try:
+                    ai_speed_scores[row['EntryNumber']] = float(row['SpeedScore'])
+                except Exception as e:
+                    print(str(e))
+            file.close()
+            print("ai_speed_scores.csv read")
+            sleep(0.2)
+            # input('press enter')
+        except Exception as e:
+            print(str(e))
+            print("Problem reading ai_speed_scores.csv")
+            sleep(0.2)
+
     if not args.anonymous and path.exists('entries.csv'):
         try:
             print("Reading entries.csv")
@@ -679,12 +702,18 @@ def main():
                 else:
                     calculated_score = 0
                     # row.append(calculated_score)
-                calculated_scores[entry_number] = calculated_score
+                if entry_number in ai_speed_scores:
+                    calculated_scores[entry_number] = round(ai_speed_scores[entry_number], 1)
+                else:
+                    calculated_scores[entry_number] = calculated_score
                 if debugit: print(','.join([str(x) for x in row]))
                 print(','.join([str(x) for x in row]), file=f)
                 last_row = append_row_2(speed_sheet, row, data_cell_format)
                 if num_judges == 3:
-                    speed_sheet.write_formula('E' + str(last_row), f"=IF(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),2)-INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),1)<INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),3)-INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),2),AVERAGE(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),{{1,2}})),AVERAGE(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),{{2,3}})))")
+                    if entry_number in ai_speed_scores:
+                        speed_sheet.write_number('E' + str(last_row), round(ai_speed_scores[entry_number], 1))
+                    else:
+                        speed_sheet.write_formula('E' + str(last_row), f"=IF(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),2)-INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),1)<INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),3)-INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),2),AVERAGE(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),{{1,2}})),AVERAGE(INDEX(SORT(B{str(last_row)}:D{str(last_row)},,,TRUE),{{2,3}})))")
                     speed_sheet.write_dynamic_array_formula('I' + str(last_row), f"==IF(AND(COUNT(F{str(last_row)}:H{str(last_row)})<>COUNTIF(F{str(last_row)}:H{str(last_row)},0),COUNT(F{str(last_row)}:H{str(last_row)})=3),IF(ABS(F{str(last_row)})=MAX(ABS(F{str(last_row)}:H{str(last_row)})),1,IF(ABS(G{str(last_row)})=MAX(ABS(F{str(last_row)}:H{str(last_row)})),2,3)),0)")
                 elif num_judges > 3:
                     speed_sheet.write_formula(calculated_score_column[num_judges - 3] + str(last_row),f"=AVERAGE(INDEX(SORT(B{str(last_row)}:{last_judge_column[num_judges]}{str(last_row)},,,TRUE),{{2,{str(num_judges - 1)}}}))")
