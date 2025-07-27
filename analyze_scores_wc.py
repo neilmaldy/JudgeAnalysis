@@ -163,7 +163,7 @@ def main():
             print("Reading entries.csv")
             sleep(0.2)
             # input('press enter')
-            file = open('entries.csv', 'r')
+            file = open('entries.csv', 'r', encoding='utf-8')
             dict_reader = csv.DictReader(file)
             for row in dict_reader:
                 entry_to_teamname[row['EntryNumber']] = row['TeamName'] + ' s/h:' + row['StationSequence'] + '/' + \
